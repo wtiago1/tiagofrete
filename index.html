@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Fretes & Mudanças</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <nav class="bg-blue-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <span class="text-xl font-bold"><i class="fas fa-truck mr-2"></i>Sistema de Fretes</span>
+            <div class="space-x-2">
+                <button onclick="switchTab('dashboard')" class="px-3 py-2 rounded hover:bg-blue-700 transition"><i class="fas fa-chart-pie mr-1"></i>Dashboard</button>
+                <button onclick="switchTab('novo-frete')" class="px-3 py-2 rounded hover:bg-blue-700 transition"><i class="fas fa-plus mr-1"></i>Novo Frete</button>
+                <button onclick="switchTab('pesquisa')" class="px-3 py-2 rounded hover:bg-blue-700 transition"><i class="fas fa-search mr-1"></i>Pesquisar</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <section id="tab-dashboard" class="tab-content">
+            <h2 class="text-2xl font-bold mb-6 text-gray-700">Visão Geral</h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+                    <p class="text-sm text-gray-500 uppercase font-bold">Total de Fretes</p>
+                    <p id="dash-total-fretes" class="text-3xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+                    <p class="text-sm text-gray-500 uppercase font-bold">Faturamento Total</p>
+                    <p id="dash-faturamento" class="text-3xl font-bold text-gray-800">R$ 0,00</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-yellow-500">
+                    <p class="text-sm text-gray-500 uppercase font-bold">Em Andamento</p>
+                    <p id="dash-andamento" class="text-3xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
+                    <p class="text-sm text-gray-500 uppercase font-bold">Próximos Agendados</p>
+                    <p id="dash-pendentes" class="text-3xl font-bold text-gray-800">0</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-bold mb-4 text-gray-700"><i class="fas fa-clock mr-2 text-blue-500"></i>Últimos Fretes Lançados</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-200 text-gray-400 text-sm uppercase">
+                                <th class="pb-3">Data</th>
+                                <th class="pb-3">Cliente</th>
+                                <th class="pb-3">Rota</th>
+                                <th class="pb-3">Valor</th>
+                                <th class="pb-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-ultimos-fretes" class="text-sm divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-novo-frete" class="tab-content hidden">
+            <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-700 border-b pb-2"><i class="fas fa-plus-circle mr-2 text-green-500"></i>Cadastrar Novo Frete</h2>
+                
+                <form id="form-frete" onsubmit="salvarFrete(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Nome do Cliente *</label>
+                            <input type="text" id="nome" required class="w-full p-2 border rounded focus:outline-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Telefone/WhatsApp *</label>
+                            <input type="tel" id="telefone" required placeholder="(19) 99999-9999" class="w-full p-2 border rounded focus:outline-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Data do Serviço *</label>
+                            <input type="date" id="data" required class="w-full p-2 border rounded focus:outline-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Valor do Frete (R$) *</label>
+                            <input type="number" step="0.01" id="valor" required placeholder="0,00" class="w-full p-2 border rounded focus:outline-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Endereço de Saída (Origem) *</label>
+                        <input type="text" id="saida" required placeholder="Rua, número, bairro, cidade" class="w-full p-2 border rounded focus:outline-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Endereço de Entrega (Destino) *</label>
+                        <input type="text" id="entrega" required placeholder="Rua, número, bairro, cidade" class="w-full p-2 border rounded focus:outline-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Status Inicial</label>
+                        <select id="status" class="w-full p-2 border rounded focus:outline-blue-500">
+                            <option value="Pendente">Pendente / Agendado</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Concluído">Concluído</option>
+                        </select>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" class="w-full bg-green-600 text-white p-3 rounded font-bold hover:bg-green-700 transition shadow">
+                            <i class="fas fa-save mr-2"></i>Salvar Frete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="tab-pesquisa" class="tab-content hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-700">Histórico e Pesquisa</h2>
+            
+            <div class="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col sm:flex-row gap-4 items-center">
+                <div class="relative flex-1 w-full">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" id="busca" oninput="buscarFretes()" placeholder="Buscar por cliente, cidade de saída ou entrega..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-blue-500">
+                </div>
+                <div class="w-full sm:w-auto">
+                    <select id="filtro-status" onchange="buscarFretes()" class="w-full p-2 border rounded focus:outline-blue-500 bg-white">
+                        <option value="Todos">Todos os Status</option>
+                        <option value="Pendente">Pendentes</option>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Concluído">Concluídos</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="resultados-pesquisa" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                </div>
+        </section>
+
+    </div>
+
+    <script>
+        // Inicializa o banco de dados local caso esteja vazio
+        if (!localStorage.getItem('fretes')) {
+            localStorage.setItem('fretes', JSON.stringify([]));
+        }
+
+        // Navegação entre abas
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            // Atualiza os dados sempre que mudar de tela
+            if (tabName === 'dashboard') carregarDashboard();
+            if (tabName === 'pesquisa') buscarFretes();
+        }
+
+        // Formata moeda (BRL)
+        function formatarMoeda(valor) {
+            return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // Formata data (DD/MM/AAAA)
+        function formatarData(dataString) {
+            const data = new Date(dataString + 'T00:00:00');
+            return data.toLocaleDateString('pt-BR');
+        }
+
+        // Retorna as cores de badge baseadas no status
+        function badgeStatus(status) {
+            switch(status) {
+                case 'Pendente': return 'bg-yellow-100 text-yellow-800';
+                case 'Em Andamento': return 'bg-blue-100 text-blue-800';
+                case 'Concluído': return 'bg-green-100 text-green-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        // Salvar novo frete
+        function salvarFrete(event) {
+            event.preventDefault();
+            
+            const fretes = JSON.parse(localStorage.getItem('fretes'));
+            
+            const novoFrete = {
+                id: Date.now(), // Gera um ID único simples
+                nome: document.getElementById('nome').value,
+                telefone: document.getElementById('telefone').value,
+                data: document.getElementById('data').value,
+                valor: parseFloat(document.getElementById('valor').value),
+                saida: document.getElementById('saida').value,
+                entrega: document.getElementById('entrega').value,
+                status: document.getElementById('status').value
+            };
+
+            fretes.push(novoFrete);
+            localStorage.setItem('fretes', JSON.stringify(fretes));
+            
+            alert('Frete cadastrado com sucesso!');
+            document.getElementById('form-frete').reset();
+            switchTab('dashboard');
+        }
+
+        // Deletar um frete
+        function apagarFrete(id) {
+            if (confirm('Tem certeza absoluta que deseja excluir este frete do histórico?')) {
+                let fretes = JSON.parse(localStorage.getItem('fretes'));
+                fretes = fretes.filter(f => f.id !== id);
+                localStorage.setItem('fretes', JSON.stringify(fretes));
+                buscarFretes(); // Atualiza a tela de busca
+            }
+        }
+
+        // Alterar o Status direto da tela de busca
+        function alterarStatus(id, novoStatus) {
+            let fretes = JSON.parse(localStorage.getItem('fretes'));
+            const index = fretes.findIndex(f => f.id === id);
+            if (index !== -1) {
+                fretes[index].status = novoStatus;
+                localStorage.setItem('fretes', JSON.stringify(fretes));
+                buscarFretes();
+            }
+        }
+
+        // Carrega as informações do Dashboard
+        function carregarDashboard() {
+            const fretes = JSON.parse(localStorage.getItem('fretes'));
+            
+            // Ordenar por data mais recente no topo
+            const fretesOrdenados = [...fretes].sort((a,b) => new Date(b.data) - new Date(a.data));
+
+            // Indicadores
+            document.getElementById('dash-total-fretes').innerText = fretes.length;
+            
+            const faturamento = fretes.reduce((acc, f) => acc + f.valor, 0);
+            document.getElementById('dash-faturamento').innerText = formatarMoeda(faturamento);
+            
+            const andamento = fretes.filter(f => f.status === 'Em Andamento').length;
+            document.getElementById('dash-andamento').innerText = andamento;
+            
+            const pendentes = fretes.filter(f => f.status === 'Pendente').length;
+            document.getElementById('dash-pendentes').innerText = pendentes;
+
+            // Renderizar tabela de últimos 5 lançados
+            const tbody = document.getElementById('lista-ultimos-fretes');
+            tbody.innerHTML = '';
+            
+            fretesOrdenados.slice(0, 5).forEach(f => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="py-3 font-medium">${formatarData(f.data)}</td>
+                        <td class="py-3">${f.nome}</td>
+                        <td class="py-3 text-xs max-w-xs truncate">${f.saida.split(',')[0]} ➔ ${f.entrega.split(',')[0]}</td>
+                        <td class="py-3 font-bold">${formatarMoeda(f.valor)}</td>
+                        <td class="py-3"><span class="px-2 py-1 text-xs font-semibold rounded-full ${badgeStatus(f.status)}">${f.status}</span></td>
+                    </tr>
+                `;
+            });
+
+            if(fretes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Nenhum frete cadastrado até o momento.</td></tr>`;
+            }
+        }
+
+        // Mecanismo de Busca Dinâmica e Filtros
+        function buscarFretes() {
+            const fretes = JSON.parse(localStorage.getItem('fretes'));
+            const termoBusca = document.getElementById('busca').value.toLowerCase();
+            const filtroStatus = document.getElementById('filtro-status').value;
+            const container = document.getElementById('resultados-pesquisa');
+            
+            container.innerHTML = '';
+
+            const fretesFiltrados = fretes.filter(f => {
+                const bateTexto = f.nome.toLowerCase().includes(termoBusca) || 
+                                  f.saida.toLowerCase().includes(termoBusca) || 
+                                  f.entrega.toLowerCase().includes(termoBusca);
+                
+                const bateStatus = filtroStatus === 'Todos' || f.status === filtroStatus;
+                
+                return bateTexto && bateStatus;
+            });
+
+            // Ordena os resultados da busca por data (mais recentes primeiro)
+            fretesFiltrados.sort((a,b) => new Date(b.data) - new Date(a.data));
+
+            fretesFiltrados.forEach(f => {
+                container.innerHTML += `
+                    <div class="bg-white rounded-lg shadow-sm p-5 border border-gray-100 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800">${f.nome}</h3>
+                                    <a href="https://wa.me/55${f.telefone.replace(/\D/g,'')}" target="_blank" class="text-blue-500 text-sm font-semibold hover:underline">
+                                        <i class="fab fa-whatsapp text-green-500 mr-1"></i>${f.telefone}
+                                    </a>
+                                </div>
+                                <span class="px-3 py-1 text-xs font-bold rounded-full ${badgeStatus(f.status)}">${f.status}</span>
+                            </div>
+                            
+                            <div class="space-y-1 my-4 text-sm text-gray-600">
+                                <p><strong><i class="fas fa-map-marker-alt text-red-500 mr-1 w-4"></i>Saída:</strong> ${f.saida}</p>
+                                <p><strong><i class="fas fa-flag text-blue-500 mr-1 w-4"></i>Entrega:</strong> ${f.entrega}</p>
+                            </div>
+                        </div>
+
+                        <div class="border-t pt-4 mt-2 flex flex-col sm:flex-row justify-between items-center gap-3">
+                            <div class="text-center sm:text-left w-full sm:w-auto">
+                                <span class="block text-xs text-gray-400">Agendado para: ${formatarData(f.data)}</span>
+                                <span class="text-xl font-black text-gray-800">${formatarMoeda(f.valor)}</span>
+                            </div>
+                            
+                            <div class="flex gap-2 w-full sm:w-auto justify-end">
+                                <select onchange="alterarStatus(${f.id}, this.value)" class="text-xs p-2 border rounded bg-gray-50 focus:outline-blue-500">
+                                    <option value="Pendente" ${f.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                                    <option value="Em Andamento" ${f.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
+                                    <option value="Concluído" ${f.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
+                                </select>
+                                <button onclick="apagarFrete(${f.id})" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded transition" title="Apagar Frete">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (fretesFiltrados.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 bg-white rounded shadow-sm">Nenhum frete encontrado correspondente aos filtros.</div>`;
+            }
+        }
+
+        // Execução inicial ao abrir a página
+        carregarDashboard();
+    </script>
+</body>
+</html>
