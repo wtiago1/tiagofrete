@@ -2,16 +2,17 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Solicitar Orçamento</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <title>Orçamento</title>
 </head>
 <body class="bg-gray-100 p-4">
+
     <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
         <h2 class="text-xl font-bold mb-4 text-center">Selecione uma data disponível</h2>
         <div id="calendario" class="mb-6"></div>
 
-        <form id="form-orcamento" class="hidden p-4 border-t border-gray-200 space-y-3">
+        <form id="form-orcamento" class="hidden border-t pt-4 space-y-3">
             <h3 id="txt-data" class="font-bold text-blue-600"></h3>
             <input type="hidden" id="data-selecionada">
             
@@ -26,7 +27,7 @@
             
             <textarea id="obs" placeholder="Descreva o que vai transportar..." required class="w-full p-2 border rounded"></textarea>
             
-            <button type="submit" id="btn-enviar" class="w-full bg-blue-600 text-white p-2 rounded font-bold">Solicitar Orçamento</button>
+            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded font-bold">Solicitar Orçamento</button>
         </form>
     </div>
 
@@ -38,38 +39,25 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let calendar;
-
-        document.addEventListener('DOMContentLoaded', function() {
-            calendar = new FullCalendar.Calendar(document.getElementById('calendario'), {
-                initialView: 'dayGridMonth',
-                locale: 'pt-br',
-                dateClick: (info) => {
-                    document.getElementById('form-orcamento').classList.remove('hidden');
-                    document.getElementById('data-selecionada').value = info.dateStr;
-                    document.getElementById('txt-data').innerText = "Data: " + info.dateStr.split('-').reverse().join('/');
-                }
-            });
-            calendar.render();
-            carregarCores();
+        const calendarEl = document.getElementById('calendario');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt-br',
+            dateClick: (info) => {
+                document.getElementById('form-orcamento').classList.remove('hidden');
+                document.getElementById('data-selecionada').value = info.dateStr;
+                document.getElementById('txt-data').innerText = "Data: " + info.dateStr.split('-').reverse().join('/');
+            }
         });
+        calendar.render();
 
-        function carregarCores() {
-            // Monitora a Agenda (Index)
-            db.collection("horarios_livres").onSnapshot(snap => {
-                calendar.removeAllEvents();
-                snap.forEach(doc => {
-                    let h = doc.data();
-                    calendar.addEvent({
-                        title: 'Livre',
-                        start: h.data,
-                        allDay: true,
-                        backgroundColor: '#10B981', // Verde
-                        borderColor: '#10B981'
-                    });
-                });
+        // Carrega cores da Agenda (Index)
+        db.collection("horarios_livres").onSnapshot(snap => {
+            calendar.removeAllEvents();
+            snap.forEach(doc => {
+                calendar.addEvent({ title: 'Livre', start: doc.data().data, allDay: true, backgroundColor: '#10B981' });
             });
-        }
+        });
 
         document.getElementById('form-orcamento').onsubmit = (e) => {
             e.preventDefault();
@@ -81,10 +69,7 @@
                 ajudante: document.getElementById('ajudante').value,
                 observacao: document.getElementById('obs').value,
                 status: 'Pendente'
-            }).then(() => {
-                alert("Orçamento enviado com sucesso!");
-                location.reload();
-            });
+            }).then(() => { alert("Orçamento enviado!"); location.reload(); });
         };
     </script>
 </body>
