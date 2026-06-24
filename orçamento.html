@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solicitar Orçamento de Frete / Mudança</title>
+    <!-- CDN do Tailwind v3 (Super Estável para ficheiros locais) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Bibliotecas do FullCalendar -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <style>
         /* Ajuste para integrar o calendário ao modo escuro do site */
@@ -15,87 +17,93 @@
         .fc .fc-button-primary:hover { background-color: #1d4ed8; }
         .fc .fc-button-primary:disabled { background-color: #1e293b; border-color: #334155; opacity: 0.5; }
         .fc .fc-daygrid-day { cursor: not-allowed; }
-        .fc .fc-daygrid-day.dia-disponivel { cursor: pointer; }
+        .fc .fc-daygrid-day.dia-disponivel { cursor: pointer !important; }
         .fc .fc-daygrid-day-number { color: #e5e7eb; padding: 4px; font-weight: 600; }
         .fc .fc-col-header-cell-cushion { color: #9ca3af; text-transform: uppercase; font-size: 0.75rem; text-decoration: none !important; }
-        .fc .fc-event { border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; font-weight: bold; text-align: center; }
+        .fc .fc-event { border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex items-center justify-center p-2 sm:p-4">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans min-h-screen flex items-center justify-center p-2 sm:p-4">
 
-    <div class="max-w-2xl w-full bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-4 sm:p-8 my-4">
+    <div class="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-8 my-4">
         <div class="text-center mb-6">
             <div class="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
                 <i class="fas fa-file-invoice-dollar text-xl"></i>
             </div>
-            <h2 class="text-2xl font-bold text-white">Solicitar Orçamento</h2>
-            <p class="text-sm text-gray-400 mt-1">Escolha uma data disponível no calendário e preencha os dados do seu frete.</p>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Solicitar Orçamento</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Escolha uma data disponível no calendário abaixo para liberar o formulário.</p>
         </div>
         
-        <div class="mb-6 bg-gray-850 p-3 sm:p-4 rounded-xl border border-gray-700">
-            <label class="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider text-center">1. Selecione a Data no Calendário *</label>
+        <!-- CALENDÁRIO DE AGENDAMENTO -->
+        <div class="mb-6 bg-gray-50 dark:bg-gray-850 p-3 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider text-center">1. Selecione a Data no Calendário *</label>
             <div class="flex gap-4 justify-center text-[10px] sm:text-xs mb-4 font-semibold">
                 <span class="flex items-center gap-1"><span class="w-3 h-3 bg-blue-600 inline-block rounded"></span> Totalmente Livre</span>
                 <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-600 inline-block rounded"></span> Períodos Restantes</span>
                 <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-600 inline-block rounded"></span> Dia Lotado</span>
             </div>
-            <div id="calendario-cliente"></div>
+            <div id="calendario-cliente" class="bg-gray-900 p-2 rounded-lg"></div>
         </div>
 
+        <!-- FORMULÁRIO PERSONALIZADO COM TEMA DE LOGÍSTICA / ESTRADA -->
         <form id="form-cliente-orcamento" onsubmit="enviarOrcamento(event)" class="space-y-5 hidden relative">
             
+            <!-- Divisor Estilizado como Estrada -->
             <div class="flex items-center justify-center my-6">
                 <div class="w-full h-3 bg-gray-950 rounded-full border-t border-b border-gray-700 relative overflow-hidden flex items-center justify-around px-2">
                     <span class="w-4 h-0.5 bg-amber-400 block opacity-80"></span>
                     <span class="w-4 h-0.5 bg-amber-400 block opacity-80"></span>
                     <span class="w-4 h-0.5 bg-amber-400 block opacity-80"></span>
                     <span class="w-4 h-0.5 bg-amber-400 block opacity-80"></span>
-                    <span class="w-4 h-0.5 bg-amber-400 block opacity-80"></span>
                 </div>
-                <div class="absolute bg-gray-800 px-3 text-xs font-bold text-amber-400 tracking-widest uppercase flex items-center gap-1.5 border border-gray-700 rounded-full py-0.5">
+                <div class="absolute bg-white dark:bg-gray-800 px-3 text-xs font-bold text-amber-500 dark:text-amber-400 tracking-widest uppercase flex items-center gap-1.5 border border-gray-300 dark:border-gray-700 rounded-full py-0.5">
                     <i class="fas fa-truck-moving"></i> Rota de Entrega
                 </div>
             </div>
 
-            <div class="bg-gray-900 border border-blue-500/30 p-3 rounded-xl flex items-center justify-between">
-                <p class="text-sm font-bold text-blue-400">
+            <!-- Informações da Data Selecionada -->
+            <div class="bg-gray-50 dark:bg-gray-900 border border-blue-500/30 p-3 rounded-xl flex items-center justify-between">
+                <p class="text-sm font-bold text-blue-600 dark:text-blue-400">
                     <i class="fas fa-calendar-alt mr-1.5 text-blue-500"></i> Data da Viagem: 
-                    <span id="txt-data-selecionada" class="text-white ml-1 bg-blue-950 px-2 py-0.5 rounded border border-blue-800"></span>
+                    <span id="txt-data-selecionada" class="text-gray-900 dark:text-white ml-1 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded border border-blue-300 dark:border-blue-800"></span>
                 </p>
-                <span class="text-[10px] uppercase tracking-wider font-semibold bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full hidden sm:inline">Agendamento Online</span>
+                <span class="text-[10px] uppercase tracking-wider font-semibold bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">Agendamento Online</span>
             </div>
 
+            <!-- Bloco: Quem e Quando -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Período de Saída *</label>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Período de Saída *</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-clock"></i></span>
-                        <select id="periodo" required class="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-blue-500 transition-colors">
-                            </select>
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-clock"></i></span>
+                        <select id="periodo" required class="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-blue-500 transition-colors">
+                            <!-- Gerado dinamicamente via JS -->
+                        </select>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Seu Nome *</label>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Seu Nome *</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-user"></i></span>
-                        <input type="text" id="nome" required placeholder="Digite seu name completo" class="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-blue-500 placeholder-gray-500">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-user"></i></span>
+                        <input type="text" id="nome" required placeholder="Digite seu nome completo" class="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-blue-500 placeholder-gray-400">
                     </div>
                 </div>
             </div>
 
+            <!-- Bloco: Detalhes Operacionais -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">WhatsApp / Celular *</label>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">WhatsApp / Celular *</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fab fa-whatsapp font-bold"></i></span>
-                        <input type="tel" id="telefone" required placeholder="(19) 99999-9999" class="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-blue-500 placeholder-gray-500">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fab fa-whatsapp font-bold"></i></span>
+                        <input type="tel" id="telefone" required placeholder="(19) 99999-9999" class="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-blue-500 placeholder-gray-400">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Tipo de Imóvel</label>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Tipo de Imóvel</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-building"></i></span>
-                        <select id="tipoLocal" class="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-blue-500">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-building"></i></span>
+                        <select id="tipoLocal" class="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-blue-500">
                             <option value="Casa">Casa</option>
                             <option value="Apartamento">Apartamento</option>
                             <option value="Diversos">Comercial / Outros</option>
@@ -104,48 +112,52 @@
                 </div>
             </div>
 
+            <!-- Logística de Ajudantes -->
             <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Logística de Carga (Ajudante)</label>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Logística de Carga (Ajudante)</label>
                 <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-users-cog"></i></span>
-                    <select id="ajudante" class="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-blue-500">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-users-cog"></i></span>
+                    <select id="ajudante" class="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-blue-500">
                         <option value="Sem Ajudante">Não (Apenas o motorista faz o transporte)</option>
                         <option value="Com Ajudante">Sim (Motorista + Ajudante para carregar)</option>
                     </select>
                 </div>
             </div>
 
-            <div class="space-y-4 relative border-l-2 border-dashed border-gray-600 ml-4 pl-5 my-2">
+            <!-- Endereços com Linha de Conexão de Rota -->
+            <div class="space-y-4 relative border-l-2 border-dashed border-gray-400 dark:border-gray-600 ml-4 pl-5 my-2">
                 <div class="relative">
-                    <span class="absolute -left-[27px] top-2 bg-blue-600 border-2 border-gray-800 w-3.5 h-3.5 rounded-full ring-4 ring-blue-900/40"></span>
-                    <label class="block text-xs font-semibold text-blue-400 mb-1.5 uppercase tracking-wider">Endereço de Origem (Coleta) *</label>
+                    <span class="absolute -left-[27px] top-2 bg-blue-600 border-2 border-white dark:border-gray-800 w-3.5 h-3.5 rounded-full ring-4 ring-blue-500/20"></span>
+                    <label class="block text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1.5 uppercase tracking-wider">Endereço de Origem (Coleta) *</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-map-marker-alt"></i></span>
-                        <input type="text" id="saida" required placeholder="Rua, número, bairro e cidade de saída" class="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-blue-500 placeholder-gray-500">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-map-marker-alt"></i></span>
+                        <input type="text" id="saida" required placeholder="Rua, número, bairro e cidade de saída" class="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-blue-500 placeholder-gray-400">
                     </div>
                 </div>
 
                 <div class="relative">
-                    <span class="absolute -left-[27px] top-2 bg-green-600 border-2 border-gray-800 w-3.5 h-3.5 rounded-full ring-4 ring-green-900/40"></span>
-                    <label class="block text-xs font-semibold text-green-400 mb-1.5 uppercase tracking-wider">Endereço de Destino (Entrega) *</label>
+                    <span class="absolute -left-[27px] top-2 bg-green-600 border-2 border-white dark:border-gray-800 w-3.5 h-3.5 rounded-full ring-4 ring-green-500/20"></span>
+                    <label class="block text-xs font-semibold text-green-600 dark:text-green-400 mb-1.5 uppercase tracking-wider">Endereço de Destino (Entrega) *</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-flag-checkered"></i></span>
-                        <input type="text" id="entrega" required placeholder="Rua, número, bairro e cidade de destino" class="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-blue-500 placeholder-gray-500">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-flag-checkered"></i></span>
+                        <input type="text" id="entrega" required placeholder="Rua, número, bairro e cidade de destino" class="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-blue-500 placeholder-gray-400">
                     </div>
                 </div>
             </div>
 
+            <!-- Inventário / Lista de Mudança -->
             <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">O que vamos transportar? (Lista de Itens) *</label>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">O que vamos transportar? (Lista de Itens) *</label>
                 <div class="relative">
-                    <span class="absolute left-3 top-3 text-gray-500"><i class="fas fa-boxes"></i></span>
-                    <textarea id="observacao" rows="4" required placeholder="Ex: 1 Geladeira, 1 Sofá 3 lugares, 5 caixas médias, 1 cama de casal, fogão..." class="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-blue-500 placeholder-gray-500"></textarea>
+                    <span class="absolute left-3 top-3 text-gray-400"><i class="fas fa-boxes"></i></span>
+                    <textarea id="observacao" rows="4" required placeholder="Ex: 1 Geladeira, 1 Sofá 3 lugares, 5 caixas médias, 1 cama de casal, fogão..." class="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-blue-500 placeholder-gray-400"></textarea>
                 </div>
-                <p class="text-[10px] text-gray-500 mt-1"><i class="fas fa-info-circle mr-1"></i> Descreva o máximo de detalhes para calcularmos o espaço exato.</p>
+                <p class="text-[10px] text-gray-400 mt-1"><i class="fas fa-info-circle mr-1"></i> Descreva o máximo de detalhes para calcularmos o espaço exato.</p>
             </div>
 
             <input type="hidden" id="data-selecionada-input">
 
+            <!-- Botão de Envio de Carga -->
             <button type="submit" id="btn-enviar" class="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg font-bold transition shadow-lg flex items-center justify-center gap-2 cursor-pointer border-b-4 border-green-800 active:border-b-0 group">
                 <i class="fas fa-shipping-fast text-lg group-hover:translate-x-1 transition-transform"></i> Finalizar e Enviar Orçamento
             </button>
@@ -153,11 +165,12 @@
 
         <div id="msg-sucesso" class="hidden text-center py-8 space-y-3">
             <i class="fas fa-check-circle text-green-500 text-5xl"></i>
-            <h3 class="text-xl font-bold text-white">Pedido Enviado com Sucesso!</h3>
-            <p class="text-gray-400 text-sm px-4">Obrigado! Recebemos as suas informações. Vamos analisar o trajeto e os itens e entraremos em contato pelo WhatsApp em breve.</p>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Pedido Enviado com Sucesso!</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm px-4">Obrigado! Recebemos as suas informações. Entraremos em contato pelo WhatsApp em breve.</p>
         </div>
     </div>
 
+    <!-- Firebase Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -195,8 +208,13 @@
                     }
                 },
                 dayCellClassNames: function(arg) {
-                    const dataStr = arg.date.toISOString().split('T')[0];
-                    const dadosDia = mapaDatasGlobais[dataStr];
+                    // CORREÇÃO CRUCIAL: Extrai a string local no formato AAAA-MM-DD diretamente do objeto date do FullCalendar
+                    const ano = arg.date.getFullYear();
+                    const mes = String(arg.date.getMonth() + 1).padStart(2, '0');
+                    const dia = String(arg.date.getDate()).padStart(2, '0');
+                    const dataLocalStr = `${ano}-${mes}-${dia}`;
+                    
+                    const dadosDia = mapaDatasGlobais[dataLocalStr];
                     if (dadosDia && dadosDia.livresReais.length > 0) {
                         return ['dia-disponivel'];
                     }
@@ -204,19 +222,21 @@
                 }
             });
             calendar.render();
-            carregarDadosAgenda();
+            escutarBancoDados();
         });
 
-        function carregarDadosAgenda() {
-            db.collection("horarios_livres").get().then((snapHorarios) => {
+        function escutarBancoDados() {
+            // Escuta em tempo real as mudanças feitas na Agenda Admin
+            db.collection("horarios_livres").onSnapshot((snapHorarios) => {
                 cacheHorariosLivres = [];
                 snapHorarios.forEach(doc => cacheHorariosLivres.push(doc.data()));
-                return db.collection("fretes").get();
-            }).then((snapFretes) => {
-                cacheFretes = [];
-                snapFretes.forEach(doc => cacheFretes.push(doc.data()));
-                processarEColorirCalendario();
-            }).catch(err => console.error("Erro ao carregar agenda:", err));
+                
+                db.collection("fretes").onSnapshot((snapFretes) => {
+                    cacheFretes = [];
+                    snapFretes.forEach(doc => cacheFretes.push(doc.data()));
+                    processarEColorirCalendario();
+                });
+            }, err => console.error("Erro ao sincronizar banco:", err));
         }
 
         function processarEColorirCalendario() {
@@ -224,11 +244,13 @@
             calendar.removeAllEvents();
             mapaDatasGlobais = {};
 
+            // Mapeia horários declarados como livres
             cacheHorariosLivres.forEach(h => {
                 if(!mapaDatasGlobais[h.data]) mapaDatasGlobais[h.data] = { livres: [], ocupados: [] };
                 if(!mapaDatasGlobais[h.data].livres.includes(h.periodo)) mapaDatasGlobais[h.data].livres.push(h.periodo);
             });
 
+            // Mapeia horários ocupados por fretes agendados e confirmados
             cacheFretes.forEach(f => {
                 if(f.data && f.status !== 'Cancelado') {
                     if(!mapaDatasGlobais[f.data]) mapaDatasGlobais[f.data] = { livres: [], ocupados: [] };
@@ -236,20 +258,21 @@
                 }
             });
 
+            // Define e insere os eventos visuais no calendário
             Object.keys(mapaDatasGlobais).forEach(dataStr => {
                 const info = mapaDatasGlobais[dataStr];
                 const livresReais = info.livres.filter(p => !info.ocupados.includes(p));
                 mapaDatasGlobais[dataStr].livresReais = livresReais;
 
-                let cor = '#dc2626'; 
-                let statusTexto = 'Lotado';
+                let cor = '#dc2626'; // Vermelho: Lotado
+                let statusTexto = 'Dia Ocupado';
 
                 if (livresReais.length === 3) {
-                    cor = '#2563eb'; 
-                    statusTexto = 'Livre';
+                    cor = '#2563eb'; // Azul: Totalmente livre
+                    statusTexto = 'Totalmente Livre';
                 } else if (livresReais.length > 0) {
-                    cor = '#16a34a'; 
-                    statusTexto = 'Disponível';
+                    cor = '#16a34a'; // Verde: Parcialmente Livre
+                    statusTexto = 'Horários Livres';
                 }
 
                 calendar.addEvent({
@@ -285,7 +308,7 @@
             event.preventDefault();
             const btn = document.getElementById('btn-enviar');
             btn.disabled = true;
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Enviando...`;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Enviando Carga...`;
 
             const pedidoOrcamento = {
                 nome: document.getElementById('nome').value,
@@ -316,7 +339,7 @@
             })
             .catch((error) => {
                 console.error("Erro ao salvar:", error);
-                alert("Erro ao enviar pedido.");
+                alert("Erro ao processar o envio do orçamento.");
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fas fa-shipping-fast text-lg"></i> Finalizar e Enviar Orçamento`;
             });
