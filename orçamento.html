@@ -2,32 +2,27 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <title>Solicitar Orçamento - Tiago Fretes</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-    <title>Orçamento</title>
+    <style>
+        .fc-event { cursor: pointer !important; padding: 2px !important; border-radius: 4px !important; font-size: 0.70rem !important; font-weight: bold !important; text-align: center !important; }
+        .fc-daygrid-day-number { font-weight: bold; color: #374151; }
+    </style>
 </head>
 <body class="bg-gray-100 p-4">
-
-    <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-bold mb-4 text-center">Selecione uma data disponível</h2>
-        <div id="calendario" class="mb-6"></div>
-
-        <form id="form-orcamento" class="hidden border-t pt-4 space-y-3">
-            <h3 id="txt-data" class="font-bold text-blue-600"></h3>
-            <input type="hidden" id="data-selecionada">
-            
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+        <h2 class="text-2xl font-bold mb-4 text-center">Selecione uma data disponível</h2>
+        <div id="calendario-cliente" class="mb-6"></div>
+        
+        <form id="form-orcamento" class="hidden space-y-4 border-t pt-4">
+            <h3 class="text-lg font-bold" id="titulo-data"></h3>
+            <input type="hidden" id="input-data">
+            <select id="select-periodo" class="w-full p-2 border rounded"></select>
             <input type="text" id="nome" placeholder="Seu Nome" required class="w-full p-2 border rounded">
-            <input type="text" id="saida" placeholder="Endereço de Coleta" required class="w-full p-2 border rounded">
+            <input type="text" id="saida" placeholder="Endereço de Saída" required class="w-full p-2 border rounded">
             <input type="text" id="entrega" placeholder="Endereço de Entrega" required class="w-full p-2 border rounded">
-            
-            <select id="ajudante" class="w-full p-2 border rounded">
-                <option value="Sem Ajudante">Precisa de Ajudante? Não</option>
-                <option value="Com Ajudante">Precisa de Ajudante? Sim</option>
-            </select>
-            
-            <textarea id="obs" placeholder="Descreva o que vai transportar..." required class="w-full p-2 border rounded"></textarea>
-            
-            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded font-bold">Solicitar Orçamento</button>
+            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded font-bold">Enviar Orçamento</button>
         </form>
     </div>
 
@@ -35,42 +30,79 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyDqHHQ1uzScfN09vJgvmuHnYnPCyV5_mPo", authDomain: "tiago-frete.firebaseapp.com", projectId: "tiago-frete", storageBucket: "tiago-frete.firebasestorage.app", messagingSenderId: "229105333833", appId: "1:229105333833:web:7791e40bdb613c6711f198" };
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqHHQ1uzScfN09vJgvmuHnYnPCyV5_mPo",
+            authDomain: "tiago-frete.firebaseapp.com",
+            projectId: "tiago-frete",
+            storageBucket: "tiago-frete.firebasestorage.app",
+            messagingSenderId: "229105333833",
+            appId: "1:229105333833:web:7791e40bdb613c6711f198"
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const calendarEl = document.getElementById('calendario');
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'pt-br',
-            dateClick: (info) => {
-                document.getElementById('form-orcamento').classList.remove('hidden');
-                document.getElementById('data-selecionada').value = info.dateStr;
-                document.getElementById('txt-data').innerText = "Data: " + info.dateStr.split('-').reverse().join('/');
-            }
-        });
-        calendar.render();
+        let calendar;
 
-        // Carrega cores da Agenda (Index)
-        db.collection("horarios_livres").onSnapshot(snap => {
-            calendar.removeAllEvents();
-            snap.forEach(doc => {
-                calendar.addEvent({ title: 'Livre', start: doc.data().data, allDay: true, backgroundColor: '#10B981' });
+        document.addEventListener('DOMContentLoaded', function() {
+            calendar = new FullCalendar.Calendar(document.getElementById('calendario-cliente'), {
+                initialView: 'dayGridMonth',
+                locale: 'pt-br',
+                dateClick: function(info) {
+                    abrirFormulario(info.dateStr);
+                }
             });
+            calendar.render();
+            carregarDados();
         });
 
-        document.getElementById('form-orcamento').onsubmit = (e) => {
-            e.preventDefault();
-            db.collection("fretes").add({
-                nome: document.getElementById('nome').value,
-                data: document.getElementById('data-selecionada').value,
-                saida: document.getElementById('saida').value,
-                entrega: document.getElementById('entrega').value,
-                ajudante: document.getElementById('ajudante').value,
-                observacao: document.getElementById('obs').value,
-                status: 'Pendente'
-            }).then(() => { alert("Orçamento enviado!"); location.reload(); });
-        };
+        function carregarDados() {
+            let horarios = [];
+            let fretes = [];
+
+            db.collection("horarios_livres").onSnapshot(snap => {
+                horarios = snap.docs.map(d => d.data());
+                renderizarCalendario(horarios, fretes);
+            });
+
+            db.collection("fretes").onSnapshot(snap => {
+                fretes = snap.docs.map(d => d.data());
+                renderizarCalendario(horarios, fretes);
+            });
+        }
+
+        function renderizarCalendario(horarios, fretes) {
+            calendar.removeAllEvents();
+            const mapa = {};
+
+            horarios.forEach(h => {
+                if (!mapa[h.data]) mapa[h.data] = { livres: [], ocupados: [] };
+                if (!mapa[h.data].livres.includes(h.periodo)) mapa[h.data].livres.push(h.periodo);
+            });
+
+            fretes.forEach(f => {
+                if (f.data && f.status !== 'Cancelado') {
+                    if (!mapa[f.data]) mapa[f.data] = { livres: [], ocupados: [] };
+                    if (!mapa[f.data].ocupados.includes(f.periodo)) mapa[f.data].ocupados.push(f.periodo);
+                }
+            });
+
+            Object.keys(mapa).forEach(data => {
+                const info = mapa[data];
+                const livresReais = info.livres.filter(p => !info.ocupados.includes(p));
+                
+                let cor = '#EF4444', texto = 'Lotado'; // Vermelho
+                if (livresReais.length === 3) { cor = '#3B82F6'; texto = 'Livre'; } // Azul
+                else if (livresReais.length > 0) { cor = '#10B981'; texto = 'Disp.'; } // Verde
+
+                calendar.addEvent({ title: texto, start: data, allDay: true, backgroundColor: cor, borderColor: cor });
+            });
+        }
+
+        function abrirFormulario(data) {
+            document.getElementById('form-orcamento').classList.remove('hidden');
+            document.getElementById('input-data').value = data;
+            document.getElementById('titulo-data').innerText = "Data selecionada: " + data.split('-').reverse().join('/');
+        }
     </script>
 </body>
 </html>
