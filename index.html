@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Fretes & Mudanças (Nuvem)</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Utilizando o Tailwind CDN v3 estável para evitar falhas locais -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
@@ -17,12 +18,12 @@
             <div class="space-x-1 sm:space-x-2 flex items-center">
                 <button onclick="switchTab('dashboard')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-chart-pie mr-1"></i>Dashboard</button>
                 <button onclick="switchTab('novo-frete')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-plus mr-1"></i>Novo</button>
-                <button onclick="switchTab('orcamentos-aba')" class="relative px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base bg-blue-800 font-semibold">
+                <button onclick="switchTab('orcamentos-aba')" class="relative px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base">
                     <i class="fas fa-file-invoice-dollar mr-1"></i>Orçamentos
                     <span id="badge-contador-orcamentos" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border border-white">0</span>
                 </button>
                 <button onclick="switchTab('agenda')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-calendar-alt mr-1"></i>Agenda</button>
-                <button onclick="switchTab('pesquisa')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-search mr-1"></i>Pesquisar</button>
+                <button onclick="switchTab('pesquisa')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-search mr-1"></i>Pesquisa</button>
             </div>
         </div>
     </nav>
@@ -33,12 +34,15 @@
 
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
 
+        <!-- DASHBOARD -->
         <section id="tab-dashboard" class="tab-content">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h2 class="text-2xl font-bold text-gray-700">Visão Geral Financeira</h2>
                 <div class="flex items-center gap-2 bg-white p-2 rounded shadow-sm border w-full sm:w-auto">
                     <i class="fas fa-calendar-alt text-blue-500 pl-1"></i>
-                    <select id="dash-filtro-mes" onchange="processarDados()" class="bg-transparent focus:outline-none text-sm font-semibold text-gray-700 w-full"></select>
+                    <select id="dash-filtro-mes" onchange="processarDados()" class="bg-transparent focus:outline-none text-sm font-semibold text-gray-700 w-full">
+                        <option value="todos">Todos os Meses</option>
+                    </select>
                 </div>
             </div>
             
@@ -46,7 +50,7 @@
                 <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-blue-500">
                     <p class="text-xs text-gray-400 uppercase font-bold">Faturamento Bruto</p>
                     <p id="dash-faturamento" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
-                    <span id="dash-qtd-fretes" class="text-xs text-gray-400">0 serviços no mês</span>
+                    <span id="dash-qtd-fretes" class="text-xs text-gray-400">0 serviços</span>
                 </div>
                 <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-red-500">
                     <p class="text-xs text-gray-400 uppercase font-bold">Total de Despesas</p>
@@ -54,7 +58,7 @@
                     <span class="text-xs text-gray-400">Custos operacionais</span>
                 </div>
                 <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-green-500">
-                    <p class="text-xs text-gray-400 uppercase font-bold">Lucro Líquido (No Bolso)</p>
+                    <p class="text-xs text-gray-400 uppercase font-bold">Lucro Líquido</p>
                     <p id="dash-lucro-real" class="text-2xl font-bold text-green-600">R$ 0,00</p>
                     <span id="dash-Margem" class="text-xs text-green-500 font-semibold">Margem: 0%</span>
                 </div>
@@ -65,8 +69,24 @@
                 </div>
             </div>
 
-            </section>
+            <!-- GRÁFICOS (RECONSTRUÍDOS) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white p-4 rounded-lg shadow-sm border">
+                    <h3 class="text-sm font-bold text-gray-600 mb-4 uppercase tracking-wider">Desempenho Mensal</h3>
+                    <div class="relative h-64">
+                        <canvas id="chart-financeiro"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border">
+                    <h3 class="text-sm font-bold text-gray-600 mb-4 uppercase tracking-wider">Proporção de Status</h3>
+                    <div class="relative h-64 flex justify-center">
+                        <canvas id="chart-status"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
 
+        <!-- NOVO FRETE -->
         <section id="tab-novo-frete" class="tab-content hidden">
             <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-sm p-6">
                 <h2 class="text-2xl font-bold mb-6 text-gray-700 border-b pb-2"><i class="fas fa-plus-circle mr-2 text-green-500"></i>Cadastrar Novo Frete</h2>
@@ -112,18 +132,24 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-600 mb-1">Status Inicial</label>
-                        <select id="status" class="w-full p-2 border rounded"><option value="Pendente">Pendente</option><option value="Em Andamento">Em Andamento</option><option value="Concluído">Concluído</option></select>
+                        <select id="status" class="w-full p-2 border rounded">
+                            <option value="Pendente">Pendente</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Concluído">Concluído</option>
+                        </select>
                     </div>
                     <button type="submit" class="w-full bg-green-600 text-white p-3 rounded font-bold hover:bg-green-700 transition shadow">Salvar Frete na Nuvem</button>
                 </form>
             </div>
         </section>
 
+        <!-- ORÇAMENTOS -->
         <section id="tab-orcamentos-aba" class="tab-content hidden">
-            <h2 class="text-2xl font-bold mb-2 text-gray-700"><i class="fas fa-file-invoice-dollar mr-2 text-blue-500"></i>Orçamentos Solicitados via Site</h2>
+            <h2 class="text-2xl font-bold mb-4 text-gray-700"><i class="fas fa-file-invoice-dollar mr-2 text-blue-500"></i>Orçamentos Solicitados via Site</h2>
             <div id="lista-orcamentos-pendentes" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
         </section>
 
+        <!-- AGENDA -->
         <section id="tab-agenda" class="tab-content hidden">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-lg shadow-sm border h-fit space-y-6">
@@ -167,12 +193,14 @@
             </div>
         </section>
 
+        <!-- PESQUISA -->
         <section id="tab-pesquisa" class="tab-content hidden">
             <h2 class="text-2xl font-bold mb-6 text-gray-700">Histórico e Pesquisa</h2>
             <div id="resultados-pesquisa" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
         </section>
     </div>
 
+    <!-- MODAL DE TRATAMENTO -->
     <div id="modal-tratar" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 text-gray-800">
             <div class="flex justify-between items-center border-b pb-3 mb-4">
@@ -199,7 +227,10 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-bold text-gray-700 mb-1">Status:</label>
-                    <select id="modal-status" class="w-full p-2 border rounded bg-white"><option value="Pendente">Pendente</option><option value="Em Andamento">Confirmado</option></select>
+                    <select id="modal-status" class="w-full p-2 border rounded bg-white">
+                        <option value="Pendente">Pendente</option>
+                        <option value="Em Andamento">Confirmado</option>
+                    </select>
                 </div>
                 <div class="flex gap-2 justify-end">
                     <button type="button" onclick="fecharModalTratar()" class="px-4 py-2 bg-gray-100 rounded font-bold">Cancelar</button>
@@ -209,6 +240,7 @@
         </div>
     </div>
 
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -229,6 +261,8 @@
         let cacheFretes = [];
         let cacheHorariosLivres = [];
         let calendar = null;
+        let chartFinanceiro = null;
+        let chartStatus = null;
 
         function escutarBanco() {
             document.getElementById('loading-bar').classList.remove('hidden');
@@ -238,6 +272,9 @@
                 snapshot.forEach((doc) => { let f = doc.data(); f.id = doc.id; cacheFretes.push(f); });
                 renderizarAbaOrcamentos();
                 atualizarCalendarioEventos();
+                popularFiltroMeses();
+                processarDados();
+                renderizarPesquisa();
                 document.getElementById('loading-bar').classList.add('hidden');
             });
 
@@ -263,6 +300,7 @@
                 headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
                 selectable: true,
                 dateClick: function(info) {
+                    // Normalização estrita da string de data
                     document.getElementById('agenda-data').value = info.dateStr;
                     renderizarHorariosDoDiaSelecionado();
                 }
@@ -276,16 +314,13 @@
             if (!calendar) return;
             calendar.removeAllEvents();
             
-            // Agrupar tudo por data para calcular as cores dinâmicas
             const mapaDatas = {};
 
-            // 1. Mapeia períodos que você marcou como LIVRES
             cacheHorariosLivres.forEach(h => {
                 if(!mapaDatas[h.data]) mapaDatas[h.data] = { livres: [], ocupados: [] };
                 if(!mapaDatas[h.data].livres.includes(h.periodo)) mapaDatas[h.data].livres.push(h.periodo);
             });
 
-            // 2. Mapeia períodos ocupados por fretes já agendados
             cacheFretes.forEach(f => {
                 if(f.data && f.status !== 'Cancelado') {
                     if(!mapaDatas[f.data]) mapaDatas[f.data] = { livres: [], ocupados: [] };
@@ -293,21 +328,18 @@
                 }
             });
 
-            // 3. Aplica as regras de cores solicitadas por você
             Object.keys(mapaDatas).forEach(dataStr => {
                 const info = mapaDatas[dataStr];
-                
-                // Filtra os livres removendo os que já foram tomados por fretes reais
                 const livresReais = info.livres.filter(p => !info.ocupados.includes(p));
                 
-                let cor = '#EF4444'; // Vermelho Padrão (Lotado/Completo)
+                let cor = '#EF4444'; 
                 let textoStatus = 'Completo / Ocupado';
 
                 if (livresReais.length === 3) {
-                    cor = '#3B82F6'; // Azul: Totalmente disponível (Manhã, Tarde e Noite livres)
+                    cor = '#3B82F6'; 
                     textoStatus = 'Totalmente Livre';
                 } else if (livresReais.length > 0) {
-                    cor = '#10B981'; // Verde: Parcialmente disponível (Ainda tem horários)
+                    cor = '#10B981'; 
                     textoStatus = `Disponível: ${livresReais.join(', ')}`;
                 }
 
@@ -327,7 +359,6 @@
             const data = document.getElementById('agenda-data').value;
             const periodo = document.getElementById('agenda-periodo').value;
 
-            // Evita duplicados na nuvem
             const existe = cacheHorariosLivres.some(h => h.data === data && h.periodo === periodo);
             if(existe) { alert("Este período já está publicado como livre!"); return; }
 
@@ -337,7 +368,9 @@
         }
 
         function removerHorarioLivre(id) {
-            if(confirm("Remover disponibilidade deste período?")) { db.collection("horarios_livres").doc(id).delete(); }
+            if(confirm("Remover disponibilidade deste período?")) { 
+                db.collection("horarios_livres").doc(id).delete(); 
+            }
         }
 
         function renderizarHorariosDoDiaSelecionado() {
@@ -357,7 +390,7 @@
                 container.innerHTML += `
                     <div class="flex justify-between items-center p-2 border rounded ${estaOcupado ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}">
                         <span class="font-semibold text-gray-700">
-                            <i class="fas ${estaOcupado ? 'fa-truck text-red-500' : 'fa-check-circle text-blue-500'} mr-1"></i> Período: ${h.periodo} ${estaOcupado ? '(Agendado)' : '(Livre)'}
+                            <i class="fas ${estaOcupado ? 'fa-truck text-red-500' : 'fa-check-circle text-blue-500'} mr-1"></i> ${h.periodo} ${estaOcupado ? '(Agendado)' : '(Livre)'}
                         </span>
                         <button onclick="removerHorarioLivre('${h.id}')" class="text-red-500 hover:text-red-700 text-xs pl-2">
                             <i class="fas fa-trash-alt"></i>
@@ -369,26 +402,42 @@
         function salvarFrete(event) {
             event.preventDefault();
             const novoFrete = {
-                nome: document.getElementById('nome').value, telefone: document.getElementById('telefone').value,
-                data: document.getElementById('data').value, periodo: document.getElementById('periodo').value,
-                valor: parseFloat(document.getElementById('valor').value || 0), saida: document.getElementById('saida').value,
-                entrega: document.getElementById('entrega').value, status: document.getElementById('status').value,
+                nome: document.getElementById('nome').value, 
+                telefone: document.getElementById('telefone').value,
+                data: document.getElementById('data').value, 
+                periodo: document.getElementById('periodo').value,
+                valor: parseFloat(document.getElementById('valor').value || 0), 
+                saida: document.getElementById('saida').value,
+                entrega: document.getElementById('entrega').value, 
+                status: document.getElementById('status').value,
                 criadoEm: new Date().toISOString()
             };
-            db.collection("fretes").add(novoFrete).then(() => { document.getElementById('form-frete').reset(); switchTab('dashboard'); });
+            db.collection("fretes").add(novoFrete).then(() => { 
+                document.getElementById('form-frete').reset(); 
+                switchTab('dashboard'); 
+            });
         }
 
         function renderizarAbaOrcamentos() {
             const container = document.getElementById('lista-orcamentos-pendentes');
+            const badge = document.getElementById('badge-contador-orcamentos');
             if(!container) return; container.innerHTML = '';
+            
             const orcamentosFiltrados = cacheFretes.filter(f => f.status === 'Pendente' && (f.valor === 0 || !f.valor));
             
+            if(orcamentosFiltrados.length > 0) {
+                badge.innerText = orcamentosFiltrados.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
             orcamentosFiltrados.forEach(f => {
                 container.innerHTML += `
                     <div class="bg-white rounded-xl shadow-sm p-5 border border-yellow-200 flex flex-col justify-between">
                         <div>
                             <h3 class="text-lg font-bold text-gray-800">${f.nome}</h3>
-                            <p class="text-xs text-gray-500">Solicitou Período da ${f.periodo || 'A combinar'}</p>
+                            <p class="text-xs text-gray-500">Solicitou Período da ${f.periodo || 'A combinar'} para o dia ${f.data ? f.data.split('-').reverse().join('/') : 'A combinar'}</p>
                             <div class="text-xs bg-gray-50 p-2 border rounded my-2">
                                 <p><strong>De:</strong> ${f.saida}</p><p><strong>Para:</strong> ${f.entrega}</p>
                             </div>
@@ -404,19 +453,162 @@
         function abrirModalTratar(id) {
             const f = cacheFretes.find(item => item.id === id); if(!f) return;
             document.getElementById('modal-id').value = f.id;
-            document.getElementById('modal-info-nome').innerText = f.nome; document.getElementById('modal-info-saida').innerText = f.saida; document.getElementById('modal-info-entrega').innerText = f.entrega;
-            document.getElementById('modal-data').value = f.data || ''; document.getElementById('modal-periodo').value = f.periodo || 'Manhã';
-            document.getElementById('modal-valor').value = f.valor || ''; document.getElementById('modal-tratar').classList.remove('hidden');
+            document.getElementById('modal-info-nome').innerText = f.nome; 
+            document.getElementById('modal-info-saida').innerText = f.saida; 
+            document.getElementById('modal-info-entrega').innerText = f.entrega;
+            document.getElementById('modal-data').value = f.data || ''; 
+            document.getElementById('modal-periodo').value = f.periodo || 'Manhã';
+            document.getElementById('modal-valor').value = f.valor || ''; 
+            document.getElementById('modal-tratar').classList.remove('hidden');
         }
+        
         function fecharModalTratar() { document.getElementById('modal-tratar').classList.add('hidden'); }
         
         function atualizarOrcamentoTratado(event) {
-            event.preventDefault(); const id = document.getElementById('modal-id').value;
+            event.preventDefault(); 
+            const id = document.getElementById('modal-id').value;
             const dados = {
-                data: document.getElementById('modal-data').value, periodo: document.getElementById('modal-periodo').value,
-                valor: parseFloat(document.getElementById('modal-valor').value), status: document.getElementById('modal-status').value
+                data: document.getElementById('modal-data').value, 
+                periodo: document.getElementById('modal-periodo').value,
+                valor: parseFloat(document.getElementById('modal-valor').value), 
+                status: document.getElementById('modal-status').value
             };
-            db.collection("fretes").doc(id).update(dados).then(() => { fecharModalTratar(); switchTab('dashboard'); });
+            db.collection("fretes").doc(id).update(dados).then(() => { 
+                fecharModalTratar(); 
+                switchTab('dashboard'); 
+            });
+        }
+
+        // LÓGICA E CONSTRUÇÃO DOS GRÁFICOS (ADICIONADA)
+        function popularFiltroMeses() {
+            const filtro = document.getElementById('dash-filtro-mes');
+            const valorSelecionado = filtro.value || 'todos';
+            filtro.innerHTML = '<option value="todos">Todos os Meses</option>';
+            
+            const mesesEncontrados = [];
+            cacheFretes.forEach(f => {
+                if(f.data) {
+                    const [ano, mes] = f.data.split('-');
+                    const chave = `${ano}-${mes}`;
+                    if(!mesesEncontrados.includes(chave)) mesesEncontrados.push(chave);
+                }
+            });
+
+            mesesEncontrados.sort().reverse().forEach(m => {
+                const [ano, mes] = m.split('-');
+                const dataObj = new Date(ano, parseInt(mes) - 1, 1);
+                const nomeMes = dataObj.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                filtro.innerHTML += `<option value="${m}">${nomeMes.toUpperCase()}</option>`;
+            });
+
+            filtro.value = valorSelecionado;
+        }
+
+        function processarDados() {
+            const filtroMes = document.getElementById('dash-filtro-mes').value;
+            
+            let faturamento = 0;
+            let despesas = 0;
+            let qtdServicos = 0;
+            let pendentes = 0, andamento = 0, concluidos = 0;
+
+            cacheFretes.forEach(f => {
+                if(f.data && f.status !== 'Cancelado') {
+                    const [ano, mes] = f.data.split('-');
+                    const chaveMes = `${ano}-${mes}`;
+
+                    if(filtroMes === 'todos' || filtroMes === chaveMes) {
+                        const v = parseFloat(f.valor || 0);
+                        faturamento += v;
+                        
+                        // Soma despesas agregadas se existirem no modelo
+                        const d = parseFloat(f.custo_gasolina || 0) + parseFloat(f.custo_ajudante || 0) + parseFloat(f.custo_pedagio || 0) + parseFloat(f.custo_manutencao || 0);
+                        despesas += d;
+                        
+                        qtdServicos++;
+
+                        if(f.status === 'Pendente') pendentes++;
+                        else if(f.status === 'Em Andamento') andamento++;
+                        else if(f.status === 'Concluído') concluidos++;
+                    }
+                }
+            });
+
+            const lucro = faturamento - despesas;
+            const margem = faturamento > 0 ? ((lucro / faturamento) * 100).toFixed(0) : 0;
+
+            // Atualiza os Cards do Topo
+            document.getElementById('dash-faturamento').innerText = faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('dash-despesas').innerText = despesas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('dash-lucro-real').innerText = lucro.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('dash-qtd-fretes').innerText = `${qtdServicos} serviços catalogados`;
+            document.getElementById('dash-Margem').innerText = `Margem: ${margem}%`;
+            document.getElementById('dash-status-resumo').innerText = `${pendentes} P | ${andamento} A | ${concluidos} C`;
+
+            renderizarGraficos(faturamento, despesas, pendentes, andamento, concluidos);
+        }
+
+        function renderizarGraficos(fat, desp, p, a, c) {
+            // 1. Gráfico Financeiro (Barras)
+            if (chartFinanceiro) chartFinanceiro.destroy();
+            const ctxFin = document.getElementById('chart-financeiro').getContext('2d');
+            chartFinanceiro = new Chart(ctxFin, {
+                type: 'bar',
+                data: {
+                    labels: ['Faturamento Bruto', 'Despesas Operacionais', 'Lucro Real'],
+                    datasets: [{
+                        label: 'Valores em R$',
+                        data: [fat, desp, fat - desp],
+                        backgroundColor: ['#3B82F6', '#EF4444', '#10B981'],
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // 2. Gráfico de Status (Rosca)
+            if (chartStatus) chartStatus.destroy();
+            const ctxSta = document.getElementById('chart-status').getContext('2d');
+            chartStatus = new Chart(ctxSta, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendentes', 'Em Andamento', 'Concluídos'],
+                    datasets: [{
+                        data: [p, a, c],
+                        backgroundColor: ['#F59E0B', '#3B82F6', '#10B981']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderizarPesquisa() {
+            const container = document.getElementById('resultados-pesquisa');
+            if(!container) return; container.innerHTML = '';
+            
+            if(cacheFretes.length === 0) {
+                container.innerHTML = '<div class="text-gray-400 text-sm">Nenhum frete cadastrado.</div>';
+                return;
+            }
+
+            cacheFretes.forEach(f => {
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-lg shadow-sm border text-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-bold text-gray-800">${f.nome}</span>
+                                <span class="px-2 py-0.5 text-xs rounded font-bold ${f.status === 'Concluído' ? 'bg-green-100 text-green-700' : f.status === 'Em Andamento' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}">${f.status}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-2"><i class="fas fa-calendar mr-1"></i>${f.data ? f.data.split('-').reverse().join('/') : 'A combinar'} - ${f.periodo}</p>
+                            <p class="text-xs"><strong>De:</strong> ${f.saida}</p>
+                            <p class="text-xs"><strong>Para:</strong> ${f.entrega}</p>
+                        </div>
+                        <div class="mt-3 pt-2 border-t flex justify-between items-center">
+                            <span class="font-bold text-green-700 text-base">R$ ${(f.valor || 0).toFixed(2)}</span>
+                            <span class="text-[11px] text-gray-400">WhatsApp: ${f.telefone}</span>
+                        </div>
+                    </div>`;
+            });
         }
     </script>
 </body>
