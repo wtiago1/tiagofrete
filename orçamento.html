@@ -79,7 +79,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // Mesma configuração de banco que você já usa
+        // Configuração do banco de dados do Tiago
         const firebaseConfig = {
             apiKey: "AIzaSyDqHHQ1uzScfN09vJgvmuHnYnPCyV5_mPo",
             authDomain: "tiago-frete.firebaseapp.com",
@@ -90,6 +90,7 @@
             measurementId: "G-XJMGGL3NTK"
         };
 
+        // Inicializa o Firebase e o Firestore
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
@@ -109,7 +110,7 @@
                 entrega: document.getElementById('entrega').value,
                 observacao: document.getElementById('observacao').value,
                 
-                // Define valores padrão de custo e preço zerados para você preencher depois
+                // Define valores padrão zerados para o seu controle financeiro posterior
                 valor: 0,
                 custo_gasolina: 0,
                 custo_ajudante: 0,
@@ -117,20 +118,21 @@
                 custo_manutencao: 0,
                 obs_manutencao: "",
                 
-                // Entra automaticamente como Pendente no seu painel
+                // Entra automaticamente com o status Pendente no seu painel
                 status: "Pendente",
-                data: new Date().toISOString().split('T')[0], // Define a data de hoje por padrão
+                data: new Date().toISOString().split('T')[0], 
                 criadoEm: new Date().toISOString()
             };
 
+            // Grava os dados na coleção "fretes" do Cloud Firestore
             db.collection("fretes").add(pedidoOrcamento)
             .then(() => {
-                // Oculta o formulário e mostra a mensagem de sucesso
+                // Oculta o formulário e mostra a mensagem de sucesso na tela
                 document.getElementById('form-cliente-orcamento').classList.add('hidden');
                 document.getElementById('msg-sucesso').classList.remove('hidden');
             })
             .catch((error) => {
-                console.error("Erro ao enviar: ", error);
+                console.error("Erro ao enviar para o Firestore: ", error);
                 alert("Houve um erro ao enviar o seu pedido. Por favor, tente novamente.");
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fas fa-paper-plane mr-2"></i>Enviar Pedido de Orçamento`;
