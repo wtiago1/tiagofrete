@@ -1,23 +1,108 @@
-<style>
-    /* Força as cores de fundo nas células do calendário */
-    .fc .fc-daygrid-day.dia-disponivel { 
-        background-color: rgba(37, 99, 235, 0.1) !important; 
-    }
-    
-    /* Estilização das legendas */
-    .fc .fc-event { 
-        border-radius: 4px; 
-        padding: 2px 4px; 
-        font-size: 0.70rem !important; 
-        font-weight: bold; 
-        text-align: center; 
-        cursor: pointer; 
-        border: none !important;
-    }
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Solicitar Orçamento - Tiago Fretes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <style>
+        .fc-event { cursor: pointer !important; padding: 2px !important; border-radius: 4px !important; font-size: 0.70rem !important; font-weight: bold !important; text-align: center !important; }
+        .fc-daygrid-day-number { font-weight: bold; color: #374151; }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+        <h2 class="text-2xl font-bold mb-4 text-center">Selecione uma data disponível</h2>
+        <div id="calendario-cliente" class="mb-6"></div>
+        
+        <form id="form-orcamento" class="hidden space-y-4 border-t pt-4">
+            <h3 class="text-lg font-bold" id="titulo-data"></h3>
+            <input type="hidden" id="input-data">
+            <select id="select-periodo" class="w-full p-2 border rounded"></select>
+            <input type="text" id="nome" placeholder="Seu Nome" required class="w-full p-2 border rounded">
+            <input type="text" id="saida" placeholder="Endereço de Saída" required class="w-full p-2 border rounded">
+            <input type="text" id="entrega" placeholder="Endereço de Entrega" required class="w-full p-2 border rounded">
+            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded font-bold">Enviar Orçamento</button>
+        </form>
+    </div>
 
-    /* Garante que o texto dentro das células seja legível */
-    .fc .fc-daygrid-day-number { 
-        z-index: 10; 
-        position: relative; 
-    }
-</style>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqHHQ1uzScfN09vJgvmuHnYnPCyV5_mPo",
+            authDomain: "tiago-frete.firebaseapp.com",
+            projectId: "tiago-frete",
+            storageBucket: "tiago-frete.firebasestorage.app",
+            messagingSenderId: "229105333833",
+            appId: "1:229105333833:web:7791e40bdb613c6711f198"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let calendar;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            calendar = new FullCalendar.Calendar(document.getElementById('calendario-cliente'), {
+                initialView: 'dayGridMonth',
+                locale: 'pt-br',
+                dateClick: function(info) {
+                    abrirFormulario(info.dateStr);
+                }
+            });
+            calendar.render();
+            carregarDados();
+        });
+
+        function carregarDados() {
+            let horarios = [];
+            let fretes = [];
+
+            db.collection("horarios_livres").onSnapshot(snap => {
+                horarios = snap.docs.map(d => d.data());
+                renderizarCalendario(horarios, fretes);
+            });
+
+            db.collection("fretes").onSnapshot(snap => {
+                fretes = snap.docs.map(d => d.data());
+                renderizarCalendario(horarios, fretes);
+            });
+        }
+
+        function renderizarCalendario(horarios, fretes) {
+            calendar.removeAllEvents();
+            const mapa = {};
+
+            horarios.forEach(h => {
+                if (!mapa[h.data]) mapa[h.data] = { livres: [], ocupados: [] };
+                if (!mapa[h.data].livres.includes(h.periodo)) mapa[h.data].livres.push(h.periodo);
+            });
+
+            fretes.forEach(f => {
+                if (f.data && f.status !== 'Cancelado') {
+                    if (!mapa[f.data]) mapa[f.data] = { livres: [], ocupados: [] };
+                    if (!mapa[f.data].ocupados.includes(f.periodo)) mapa[f.data].ocupados.push(f.periodo);
+                }
+            });
+
+            Object.keys(mapa).forEach(data => {
+                const info = mapa[data];
+                const livresReais = info.livres.filter(p => !info.ocupados.includes(p));
+                
+                let cor = '#EF4444', texto = 'Lotado'; // Vermelho
+                if (livresReais.length === 3) { cor = '#3B82F6'; texto = 'Livre'; } // Azul
+                else if (livresReais.length > 0) { cor = '#10B981'; texto = 'Disp.'; } // Verde
+
+                calendar.addEvent({ title: texto, start: data, allDay: true, backgroundColor: cor, borderColor: cor });
+            });
+        }
+
+        function abrirFormulario(data) {
+            document.getElementById('form-orcamento').classList.remove('hidden');
+            document.getElementById('input-data').value = data;
+            document.getElementById('titulo-data').innerText = "Data selecionada: " + data.split('-').reverse().join('/');
+        }
+    </script>
+</body>
+</html>
