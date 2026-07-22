@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Fretes & Mudanças (Nuvem)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <nav class="bg-blue-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <span class="text-xl font-bold"><i class="fas fa-truck mr-2"></i>TIAGO FRETE</span>
+            <div class="space-x-1 sm:space-x-2 flex items-center">
+                <button onclick="switchTab('dashboard')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-chart-pie mr-1"></i>Dashboard</button>
+                <button onclick="switchTab('novo-frete')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-plus mr-1"></i>Novo</button>
+                <button onclick="switchTab('orcamentos-aba')" class="relative px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base bg-blue-800 font-semibold">
+                    <i class="fas fa-file-invoice-dollar mr-1"></i>Orçamentos
+                    <span id="badge-contador-orcamentos" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border border-white">0</span>
+                </button>
+                <button onclick="switchTab('pesquisa')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-search mr-1"></i>Pesquisar</button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="loading-bar" class="bg-yellow-500 text-white text-center py-1 text-xs font-semibold hidden">
+        <i class="fas fa-sync fa-spin mr-1"></i> Atualizando dados com a nuvem...
+    </div>
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <section id="tab-dashboard" class="tab-content">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold text-gray-700">Visão Geral Financeira</h2>
+                <div class="flex items-center gap-2 bg-white p-2 rounded shadow-sm border w-full sm:w-auto">
+                    <i class="fas fa-calendar-alt text-blue-500 pl-1"></i>
+                    <select id="dash-filtro-mes" onchange="processarDados()" class="bg-transparent focus:outline-none text-sm font-semibold text-gray-700 w-full">
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-blue-500">
+                    <p class="text-xs text-gray-400 uppercase font-bold">Faturamento Bruto</p>
+                    <p id="dash-faturamento" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
+                    <span id="dash-qtd-fretes" class="text-xs text-gray-400">0 concluídos no mês</span>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-amber-500">
+                    <p class="text-xs text-gray-400 uppercase font-bold">Faturamento Pendente</p>
+                    <p id="dash-pendente" class="text-2xl font-bold text-amber-600">R$ 0,00</p>
+                    <span id="dash-qtd-pendentes" class="text-xs text-gray-400">0 serviços pendentes</span>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-red-500">
+                    <p class="text-xs text-gray-400 uppercase font-bold">Total de Despesas</p>
+                    <p id="dash-despesas" class="text-2xl font-bold text-red-600">R$ 0,00</p>
+                    <span class="text-xs text-gray-400">Custos operacionais</span>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-green-500">
+                    <p class="text-xs text-gray-400 uppercase font-bold">Lucro Líquido (No Bolso)</p>
+                    <p id="dash-lucro-real" class="text-2xl font-bold text-green-600">R$ 0,00</p>
+                    <span id="dash-Margem" class="text-xs text-green-500 font-semibold">Margem: 0%</span>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-yellow-500">
+                    <p class="text-xs text-gray-400 uppercase font-bold">Status dos Serviços</p>
+                    <p id="dash-status-resumo" class="text-base font-bold text-gray-700 mt-1">0 P | 0 A | 0 C</p>
+                    <span class="text-xs text-gray-400">Pendentes / Andando / Feitos</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <h3 class="text-sm font-bold mb-3 text-gray-500 uppercase tracking-wider"><i class="fas fa-receipt mr-1 text-red-500"></i>Onde foi o dinheiro neste mês?</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                    <div class="bg-gray-50 p-3 rounded border">
+                        <span class="block text-xs text-gray-400 font-medium"><i class="fas fa-gas-pump text-orange-500 mr-1"></i>Combustível</span>
+                        <span id="custo-gasolina" class="text-base font-bold text-gray-700">R$ 0,00</span>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded border">
+                        <span class="block text-xs text-gray-400 font-medium"><i class="fas fa-user-friends text-purple-500 mr-1"></i>Ajudantes</span>
+                        <span id="custo-ajudante" class="text-base font-bold text-gray-700">R$ 0,00</span>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded border">
+                        <span class="block text-xs text-gray-400 font-medium"><i class="fas fa-road text-blue-500 mr-1"></i>Pedágios</span>
+                        <span id="custo-pedagio" class="text-base font-bold text-gray-700">R$ 0,00</span>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded border">
+                        <span class="block text-xs text-gray-400 font-medium"><i class="fas fa-wrench text-red-500 mr-1"></i>Manutenção</span>
+                        <span id="custo-manutencao" class="text-base font-bold text-gray-700">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-sm p-5 lg:col-span-2">
+                    <h3 class="text-lg font-bold mb-4 text-gray-700"><i class="fas fa-chart-bar mr-2 text-blue-500"></i>Evolução Mensal (Faturamento vs Lucro)</h3>
+                    <div class="h-64">
+                        <canvas id="graficoGanhos"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-5">
+                    <h3 class="text-lg font-bold mb-4 text-gray-700"><i class="fas fa-list mr-2 text-blue-500"></i>Lançamentos do Mês</h3>
+                    <div class="overflow-y-auto max-h-64">
+                        <ul id="lista-ultimos-fretes" class="divide-y divide-gray-100 text-sm">
+                            <li class="text-center py-4 text-gray-400">Carregando...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-novo-frete" class="tab-content hidden">
+            <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-700 border-b pb-2"><i class="fas fa-plus-circle mr-2 text-green-500"></i>Cadastrar Novo Frete</h2>
+                
+                <form id="form-frete" onsubmit="salvarFrete(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Nome do Cliente *</label>
+                            <input type="text" id="nome" required class="w-full p-2 border rounded focus:outline-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Telefone/WhatsApp *</label>
+                            <input type="tel" id="telefone" required placeholder="(19) 99999-9999" class="w-full p-2 border rounded focus:outline-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Data do Serviço *</label>
+                            <input type="date" id="data" required class="w-full p-2 border rounded focus:outline-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Horário Agendado</label>
+                            <input type="time" id="hora" class="w-full p-2 border rounded focus:outline-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Valor Cobrado (R$) *</label>
+                            <input type="number" step="0.01" id="valor" required placeholder="0,00" class="w-full p-2 border text-lg font-bold text-green-700 bg-green-50 rounded focus:outline-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Local do Serviço</label>
+                            <select id="tipoLocal" class="w-full p-2 border rounded focus:outline-blue-500">
+                                <option value="Casa">Casa</option>
+                                <option value="Apartamento">Apartamento</option>
+                                <option value="Diversos">Diversos / Comercial</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Ajudante integrado?</label>
+                            <select id="ajudante" class="w-full p-2 border rounded focus:outline-blue-500">
+                                <option value="Sem Ajudante">Sem Ajudante (Só motorista)</option>
+                                <option value="Com Ajudante">Com Ajudante</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-4">
+                        <h3 class="text-sm font-bold text-red-800 uppercase tracking-wide mb-3"><i class="fas fa-gas-pump mr-1"></i>Custos e Despesas deste Serviço (Deixe 0 se não houver)</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Gasolina (R$)</label>
+                                <input type="number" step="0.01" id="custo_gasolina" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Ajudante Pago (R$)</label>
+                                <input type="number" step="0.01" id="custo_ajudante" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Pedágios (R$)</label>
+                                <input type="number" step="0.01" id="custo_pedagio" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Manutenção (R$)</label>
+                                <input type="number" step="0.01" id="custo_manutencao" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Obs. de Manutenção (Opcional)</label>
+                            <input type="text" id="obs_manutencao" placeholder="Ex: Óleo do compressor, pneu, revisão da Kombi..." class="w-full p-2 border text-xs bg-white rounded focus:outline-red-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Endereço de Saída (Origem) *</label>
+                        <input type="text" id="saida" required placeholder="Rua, número, bairro, cidade" class="w-full p-2 border rounded focus:outline-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Endereço de Entrega (Destino) *</label>
+                        <input type="text" id="entrega" required placeholder="Rua, número, bairro, cidade" class="w-full p-2 border rounded focus:outline-blue-500">
+                    </div>
+
+                    <!-- GEOLOCALIZAÇÃO: Painel do Google Maps Gratuito -->
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-map-marked-alt text-blue-600 text-xl"></i>
+                            <div>
+                                <p class="text-xs font-bold text-blue-900">Distância do Percurso</p>
+                                <div class="flex items-center gap-1 mt-0.5">
+                                    <input type="number" id="distancia_km" placeholder="--" class="w-16 p-1 text-xs border rounded bg-white font-bold text-center">
+                                    <span class="text-xs text-gray-600 font-semibold">KM</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="abrirGoogleMaps('saida', 'entrega')" class="w-full sm:w-auto bg-blue-600 text-white px-3 py-2 rounded text-xs font-bold hover:bg-blue-700 transition flex items-center justify-center gap-1 shadow-sm">
+                            <i class="fas fa-route"></i> Calcular KM e Ver Rota
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Status Inicial</label>
+                        <select id="status" class="w-full p-2 border rounded focus:outline-blue-500">
+                            <option value="Pendente">Pendente / Agendado</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Concluído">Concluído</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Observações do Frete</label>
+                        <textarea id="observacao" rows="2" placeholder="Detalhes da mudança, itens frágeis, ajudantes extras, etc..." class="w-full p-2 border rounded focus:outline-blue-500"></textarea>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" id="btn-salvar" class="w-full bg-green-600 text-white p-3 rounded font-bold hover:bg-green-700 transition shadow">
+                            <i class="fas fa-save mr-2"></i>Salvar Frete na Nuvem
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="tab-orcamentos-aba" class="tab-content hidden">
+            <h2 class="text-2xl font-bold mb-2 text-gray-700"><i class="fas fa-file-invoice-dollar mr-2 text-blue-500"></i>Orçamentos Solicitados via Site</h2>
+            <p class="text-sm text-gray-400 mb-6">Aqui aparecem os pedidos enviados de fora pelos clientes. Clique em "Tratar" para preencher preços, custos e agendar.</p>
+            
+            <div id="lista-orcamentos-pendentes" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            </div>
+        </section>
+
+        <section id="tab-pesquisa" class="tab-content hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-700">Histórico e Pesquisa (Nuvem)</h2>
+            
+            <div class="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col sm:flex-row gap-4 items-center">
+                <div class="relative flex-1 w-full">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" id="busca" oninput="filtrarEBuscar()" placeholder="Buscar por cliente, endereço, observações..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-blue-500">
+                </div>
+                <div class="w-full sm:w-auto">
+                    <select id="filtro-status" onchange="filtrarEBuscar()" class="w-full p-2 border rounded focus:outline-blue-500 bg-white">
+                        <option value="Todos">Todos os Status (Com Orçamentos)</option>
+                        <option value="Pendente">Pendentes / Orçamentos</option>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Concluído">Concluídos</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="resultados-pesquisa" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            </div>
+        </section>
+    </div>
+
+    <!-- MODAL TRATAR ORÇAMENTO -->
+    <div id="modal-tratar" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 text-gray-800">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-calculator text-blue-600 mr-2"></i>Tratar e Precificar Pedido</h3>
+                <button onclick="fecharModalTratar()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            
+            <form id="form-tratar-orcamento" onsubmit="atualizarOrcamentoTratado(event)">
+                <input type="hidden" id="modal-id">
+                
+                <div class="bg-blue-50 p-3 rounded-lg text-sm space-y-1 mb-4 border border-blue-100">
+                    <p><strong>Cliente:</strong> <span id="modal-info-nome" class="text-blue-900 font-bold"></span></p>
+                    <p><strong>Local:</strong> <span id="modal-info-local"></span> | <strong>Ajudantes solicitados:</strong> <span id="modal-info-ajudante"></span></p>
+                    <p><strong>Origem:</strong> <span id="modal-info-saida"></span></p>
+                    <p><strong>Destino:</strong> <span id="modal-info-entrega"></span></p>
+                    
+                    <div class="pt-2 mt-1 border-t border-blue-200/60 flex items-center justify-between">
+                        <span class="text-xs font-bold text-blue-800"><i class="fas fa-map-marker-alt mr-1"></i>Visualizar Trajeto:</span>
+                        <button type="button" onclick="abrirGoogleMaps('modal-info-saida', 'modal-info-entrega', true)" class="bg-white border border-blue-400 text-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-50 transition flex items-center gap-1">
+                            <i class="fas fa-external-link-alt text-[10px]"></i> Abrir Rota no GPS
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-2 rounded border mt-2">
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Itens para Transportar:</p>
+                        <p id="modal-info-obs" class="italic text-gray-700 whitespace-pre-line"></p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Definir Data *</label>
+                        <input type="date" id="modal-data" required class="w-full p-2 border rounded focus:outline-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Definir Horário</label>
+                        <input type="time" id="modal-hora" class="w-full p-2 border rounded focus:outline-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-green-700 mb-1">Preço Cobrado (R$) *</label>
+                        <input type="number" step="0.01" id="modal-valor" required placeholder="Ex: 350.00" class="w-full p-2 border font-bold text-green-700 bg-green-50 rounded focus:outline-blue-500">
+                    </div>
+                </div>
+
+                <div class="bg-red-50 p-4 rounded-lg border border-red-100 mb-4">
+                    <h4 class="text-xs font-bold text-red-800 uppercase tracking-wide mb-3"><i class="fas fa-gas-pump mr-1"></i>Previsão de Custos Operacionais</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Gasolina (R$)</label>
+                            <input type="number" step="0.01" id="modal-c-gasolina" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Ajudante (R$)</label>
+                            <input type="number" step="0.01" id="modal-c-ajudante" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Pedágios (R$)</label>
+                            <input type="number" step="0.01" id="modal-c-pedagio" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Manutenção (R$)</label>
+                            <input type="number" step="0.01" id="modal-c-manutencao" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Notas de Custo (Opcional)</label>
+                        <input type="text" id="modal-obs-manutencao" placeholder="Ex: Combustível estimado da Kombi..." class="w-full p-2 border text-xs bg-white rounded focus:outline-red-500">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Alterar Status para:</label>
+                    <select id="modal-status" class="w-full p-2 border rounded focus:outline-blue-500 bg-white">
+                        <option value="Pendente">Ainda Pendente (Apenas salvando dados)</option>
+                        <option value="Em Andamento">Confirmado / Em Andamento</option>
+                        <option value="Concluído">Serviço Realizado e Concluído</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-2 justify-end pt-2 border-t">
+                    <button type="button" onclick="fecharModalTratar()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded transition flex items-center shadow">
+                        <i class="fas fa-check mr-2"></i>Aprovar e Lançar no Sistema
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SDKs FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqHHQ1uzScfN09vJgvmuHnYnPCyV5_mPo",
+            authDomain: "tiago-frete.firebaseapp.com",
+            projectId: "tiago-frete",
+            storageBucket: "tiago-frete.firebasestorage.app",
+            messagingSenderId: "229105333833",
+            appId: "1:229105333833:web:7791e40bdb613c6711f198",
+            measurementId: "G-XJMGGL3NTK"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        let cacheFretes = [];
+        let meuGrafico = null;
+
+        window.onload = function() {
+            escutarBanco();
+        };
+
+        function abrirGoogleMaps(idOrigem, idDestino, deTextoPlano = false) {
+            let origem = deTextoPlano ? document.getElementById(idOrigem).innerText : document.getElementById(idOrigem).value;
+            let destino = deTextoPlano ? document.getElementById(idDestino).innerText : document.getElementById(idDestino).value;
+
+            if (!origem || !destino || origem.trim() === "" || destino.trim() === "") {
+                alert("Por favor, preencha tanto o endereço de Saída quanto o de Entrega primeiro!");
+                return;
+            }
+
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origem)}&destination=${encodeURIComponent(destino)}`;
+            window.open(url, '_blank');
+        }
+
+        function escutarBanco() {
+            document.getElementById('loading-bar').classList.remove('hidden');
+            
+            db.collection("fretes").orderBy("criadoEm", "desc").onSnapshot((snapshot) => {
+                cacheFretes = [];
+                snapshot.forEach((doc) => {
+                    let frete = doc.data();
+                    frete.id = doc.id;
+                    cacheFretes.push(frete);
+                });
+                
+                atualizarFiltroMeses();
+                processarDados();
+                renderizarAbaOrcamentos();
+                document.getElementById('loading-bar').classList.add('hidden');
+            }, (error) => {
+                console.error("Erro ao escutar banco: ", error);
+                alert("Erro ao conectar com a nuvem.");
+            });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        }
+
+        function formatarMoeda(valor) {
+            return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatarDataEHora(dataString, horaString) {
+            if(!dataString) return "Não agendada";
+            const [ano, mes, dia] = dataString.split('-');
+            const dataFormatada = `${dia}/${mes}/${ano}`;
+            return horaString ? `${dataFormatada} às ${horaString}` : dataFormatada;
+        }
+
+        function badgeStatus(status) {
+            switch(status) {
+                case 'Pendente': return 'bg-yellow-100 text-yellow-800';
+                case 'Em Andamento': return 'bg-blue-100 text-blue-800';
+                case 'Concluído': return 'bg-green-100 text-green-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function atualizarFiltroMeses() {
+            const seletor = document.getElementById('dash-filtro-mes');
+            if(!seletor) return;
+            const valorSelecionadoAntes = seletor.value;
+            seletor.innerHTML = '';
+
+            const mesesChave = {};
+            const agora = new Date();
+            const mesAtualChave = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
+            mesesChave[mesAtualChave] = true;
+
+            cacheFretes.forEach(f => {
+                if(f.data) {
+                    const chave = f.data.substring(0, 7); 
+                    mesesChave[chave] = true;
+                }
+            });
+
+            const chavesOrdenadas = Object.keys(mesesChave).sort().reverse();
+            
+            chavesOrdenadas.forEach(ch => {
+                const [ano, mes] = ch.split('-');
+                const nomeMes = new Date(ano, parseInt(mes) - 1, 1).toLocaleString('pt-BR', { month: 'long' });
+                const itemFormatado = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1) + ' / ' + ano;
+                
+                seletor.innerHTML += `<option value="${ch}">${itemFormatado}</option>`;
+            });
+
+            if(valorSelecionadoAntes && mesesChave[valorSelecionadoAntes]) {
+                seletor.value = valorSelecionadoAntes;
+            } else {
+                seletor.value = mesAtualChave;
+            }
+        }
+
+        function processarDados() {
+            carregarDashboard();
+            filtrarEBuscar();
+            renderizarGrafico();
+        }
+
+        function salvarFrete(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btn-salvar');
+            btn.disabled = true;
+            btn.innerText = "Salvando na Nuvem...";
+
+            const novoFrete = {
+                nome: document.getElementById('nome').value,
+                telefone: document.getElementById('telefone').value,
+                data: document.getElementById('data').value,
+                hora: document.getElementById('hora').value || "",
+                valor: parseFloat(document.getElementById('valor').value || 0),
+                tipoLocal: document.getElementById('tipoLocal').value,
+                ajudante: document.getElementById('ajudante').value,
+                saida: document.getElementById('saida').value,
+                entrega: document.getElementById('entrega').value,
+                distancia_km: parseFloat(document.getElementById('distancia_km').value || 0),
+                status: document.getElementById('status').value,
+                observacao: document.getElementById('observacao').value,
+                custo_gasolina: parseFloat(document.getElementById('custo_gasolina').value || 0),
+                custo_ajudante: parseFloat(document.getElementById('custo_ajudante').value || 0),
+                custo_pedagio: parseFloat(document.getElementById('custo_pedagio').value || 0),
+                custo_manutencao: parseFloat(document.getElementById('custo_manutencao').value || 0),
+                obs_manutencao: document.getElementById('obs_manutencao').value || "",
+                criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            db.collection("fretes").add(novoFrete).then(() => {
+                alert("Frete salvo com sucesso!");
+                document.getElementById('form-frete').reset();
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Frete na Nuvem';
+                switchTab('dashboard');
+            }).catch(err => {
+                console.error("Erro ao salvar:", err);
+                alert("Erro ao salvar frete na nuvem.");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Frete na Nuvem';
+            });
+        }
+
+        /* --- FUNÇÃO PARA EXCLUIR FRETE --- */
+        function excluirFrete(id) {
+            const confirmacao = confirm("Tem certeza de que deseja CANCELAR / EXCLUIR este frete?\nEsta ação não poderá ser desfeita.");
+            if (confirmacao) {
+                db.collection("fretes").doc(id).delete().then(() => {
+                    alert("Frete removido com sucesso!");
+                }).catch((error) => {
+                    console.error("Erro ao apagar frete: ", error);
+                    alert("Erro ao apagar o frete na nuvem.");
+                });
+            }
+        }
+
+        function carregarDashboard() {
+            const mesSelecionado = document.getElementById('dash-filtro-mes').value;
+            let faturamento = 0, pendente = 0, despesas = 0;
+            let qtdConcluidos = 0, qtdPendentes = 0;
+            let cGasolina = 0, cAjudante = 0, cPedagio = 0, cManutencao = 0;
+            let pCount = 0, aCount = 0, cCount = 0;
+
+            const fretesDoMes = cacheFretes.filter(f => f.data && f.data.startsWith(mesSelecionado));
+            const listaUltimos = document.getElementById('lista-ultimos-fretes');
+            listaUltimos.innerHTML = '';
+
+            fretesDoMes.forEach(f => {
+                const totalCustosFrete = (f.custo_gasolina || 0) + (f.custo_ajudante || 0) + (f.custo_pedagio || 0) + (f.custo_manutencao || 0);
+
+                if (f.status === 'Concluído') {
+                    faturamento += (f.valor || 0);
+                    despesas += totalCustosFrete;
+                    cGasolina += (f.custo_gasolina || 0);
+                    cAjudante += (f.custo_ajudante || 0);
+                    cPedagio += (f.custo_pedagio || 0);
+                    cManutencao += (f.custo_manutencao || 0);
+                    qtdConcluidos++;
+                    cCount++;
+                } else if (f.status === 'Pendente') {
+                    pendente += (f.valor || 0);
+                    qtdPendentes++;
+                    pCount++;
+                } else if (f.status === 'Em Andamento') {
+                    aCount++;
+                }
+
+                // Renderiza item nos lançamentos do mês com botão excluir
+                listaUltimos.innerHTML += `
+                    <li class="py-2 flex justify-between items-center border-b border-gray-100 last:border-0">
+                        <div>
+                            <p class="font-bold text-gray-800 text-xs sm:text-sm">${f.nome}</p>
+                            <p class="text-[11px] text-gray-400">${formatarDataEHora(f.data, f.hora)}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-xs ${f.status === 'Concluído' ? 'text-green-600' : 'text-amber-600'}">${formatarMoeda(f.valor)}</span>
+                            <button onclick="excluirFrete('${f.id}')" title="Cancelar/Excluir" class="text-red-500 hover:text-red-700 text-xs p-1">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </li>
+                `;
+            });
+
+            if (fretesDoMes.length === 0) {
+                listaUltimos.innerHTML = '<li class="text-center py-4 text-gray-400 text-xs">Nenhum frete lançado neste mês.</li>';
+            }
+
+            const lucroReal = faturamento - despesas;
+            const margem = faturamento > 0 ? ((lucroReal / faturamento) * 100).toFixed(1) : 0;
+
+            document.getElementById('dash-faturamento').innerText = formatarMoeda(faturamento);
+            document.getElementById('dash-qtd-fretes').innerText = `${qtdConcluidos} concluídos no mês`;
+            document.getElementById('dash-pendente').innerText = formatarMoeda(pendente);
+            document.getElementById('dash-qtd-pendentes').innerText = `${qtdPendentes} serviços pendentes`;
+            document.getElementById('dash-despesas').innerText = formatarMoeda(despesas);
+            document.getElementById('dash-lucro-real').innerText = formatarMoeda(lucroReal);
+            document.getElementById('dash-Margem').innerText = `Margem: ${margem}%`;
+            document.getElementById('dash-status-resumo').innerText = `${pCount} P | ${aCount} A | ${cCount} C`;
+
+            document.getElementById('custo-gasolina').innerText = formatarMoeda(cGasolina);
+            document.getElementById('custo-ajudante').innerText = formatarMoeda(cAjudante);
+            document.getElementById('custo-pedagio').innerText = formatarMoeda(cPedagio);
+            document.getElementById('custo-manutencao').innerText = formatarMoeda(cManutencao);
+        }
+
+        function renderizarAbaOrcamentos() {
+            const container = document.getElementById('lista-orcamentos-pendentes');
+            const badge = document.getElementById('badge-contador-orcamentos');
+            container.innerHTML = '';
+
+            const orcamentos = cacheFretes.filter(f => f.origemSolicitacao === 'Site' && f.status === 'Pendente');
+
+            if (orcamentos.length > 0) {
+                badge.innerText = orcamentos.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+                container.innerHTML = '<p class="text-gray-400 text-sm col-span-2 text-center py-8">Nenhum orçamento pendente recebido pelo site.</p>';
+                return;
+            }
+
+            orcamentos.forEach(o => {
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-blue-900">${o.nome}</h3>
+                            <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-semibold">Novo Pedido</span>
+                        </div>
+                        <p class="text-xs text-gray-600 mb-1"><i class="fas fa-phone mr-1"></i>${o.telefone}</p>
+                        <p class="text-xs text-gray-600 mb-1"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>De: ${o.saida}</p>
+                        <p class="text-xs text-gray-600 mb-3"><i class="fas fa-flag-checkered text-green-500 mr-1"></i>Para: ${o.entrega}</p>
+                        <div class="flex gap-2">
+                            <button onclick="abrirModalTratar('${o.id}')" class="flex-1 bg-blue-600 text-white py-2 rounded text-xs font-bold hover:bg-blue-700 transition">
+                                <i class="fas fa-calculator mr-1"></i>Tratar / Precificar
+                            </button>
+                            <button onclick="excluirFrete('${o.id}')" class="bg-red-100 text-red-700 px-3 py-2 rounded text-xs font-bold hover:bg-red-200 transition" title="Recusar/Excluir Orçamento">
+                                <i class="fas fa-trash-alt"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function filtrarEBuscar() {
+            const termo = document.getElementById('busca').value.toLowerCase();
+            const statusFiltro = document.getElementById('filtro-status').value;
+            const container = document.getElementById('resultados-pesquisa');
+            container.innerHTML = '';
+
+            const filtrados = cacheFretes.filter(f => {
+                const bateStatus = (statusFiltro === 'Todos') || (f.status === statusFiltro);
+                const bateTexto = (f.nome || '').toLowerCase().includes(termo) ||
+                                  (f.saida || '').toLowerCase().includes(termo) ||
+                                  (f.entrega || '').toLowerCase().includes(termo) ||
+                                  (f.observacao || '').toLowerCase().includes(termo);
+                return bateStatus && bateTexto;
+            });
+
+            if(filtrados.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-sm col-span-2 text-center py-8">Nenhum registro encontrado.</p>';
+                return;
+            }
+
+            filtrados.forEach(f => {
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 class="font-bold text-gray-800 text-lg">${f.nome}</h3>
+                                    <p class="text-xs text-gray-500"><i class="fas fa-phone mr-1"></i>${f.telefone}</p>
+                                </div>
+                                <span class="text-xs px-2.5 py-1 rounded-full font-bold ${badgeStatus(f.status)}">${f.status}</span>
+                            </div>
+                            <div class="text-xs space-y-1 mb-3 text-gray-600 bg-gray-50 p-2.5 rounded">
+                                <p><strong>Data/Hora:</strong> ${formatarDataEHora(f.data, f.hora)}</p>
+                                <p><strong>Origem:</strong> ${f.saida}</p>
+                                <p><strong>Destino:</strong> ${f.entrega}</p>
+                                ${f.observacao ? `<p class="mt-1 italic text-gray-500">Obs: ${f.observacao}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between border-t pt-3 mt-2">
+                            <div>
+                                <span class="text-xs text-gray-400 block">Valor</span>
+                                <span class="font-bold text-lg text-green-600">${formatarMoeda(f.valor)}</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="abrirModalTratar('${f.id}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-xs font-bold transition">
+                                    <i class="fas fa-edit mr-1"></i>Editar
+                                </button>
+                                <button onclick="excluirFrete('${f.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded text-xs font-bold transition border border-red-200">
+                                    <i class="fas fa-trash-alt mr-1"></i>Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function abrirModalTratar(id) {
+            const frete = cacheFretes.find(f => f.id === id);
+            if (!frete) return;
+
+            document.getElementById('modal-id').value = frete.id;
+            document.getElementById('modal-info-nome').innerText = frete.nome || 'Não informado';
+            document.getElementById('modal-info-local').innerText = frete.tipoLocal || 'Não informado';
+            document.getElementById('modal-info-ajudante').innerText = frete.ajudante || 'Não informado';
+            document.getElementById('modal-info-saida').innerText = frete.saida || '-';
+            document.getElementById('modal-info-entrega').innerText = frete.entrega || '-';
+            document.getElementById('modal-info-obs').innerText = frete.observacao || 'Nenhum detalhe informado.';
+
+            document.getElementById('modal-data').value = frete.data || '';
+            document.getElementById('modal-hora').value = frete.hora || '';
+            document.getElementById('modal-valor').value = frete.valor || '';
+            document.getElementById('modal-c-gasolina').value = frete.custo_gasolina || 0;
+            document.getElementById('modal-c-ajudante').value = frete.custo_ajudante || 0;
+            document.getElementById('modal-c-pedagio').value = frete.custo_pedagio || 0;
+            document.getElementById('modal-c-manutencao').value = frete.custo_manutencao || 0;
+            document.getElementById('modal-obs-manutencao').value = frete.obs_manutencao || '';
+            document.getElementById('modal-status').value = frete.status || 'Pendente';
+
+            document.getElementById('modal-tratar').classList.remove('hidden');
+        }
+
+        function fecharModalTratar() {
+            document.getElementById('modal-tratar').classList.add('hidden');
+        }
+
+        function atualizarOrcamentoTratado(event) {
+            event.preventDefault();
+            const id = document.getElementById('modal-id').value;
+
+            const dadosAtualizados = {
+                data: document.getElementById('modal-data').value,
+                hora: document.getElementById('modal-hora').value || "",
+                valor: parseFloat(document.getElementById('modal-valor').value || 0),
+                custo_gasolina: parseFloat(document.getElementById('modal-c-gasolina').value || 0),
+                custo_ajudante: parseFloat(document.getElementById('modal-c-ajudante').value || 0),
+                custo_pedagio: parseFloat(document.getElementById('modal-c-pedagio').value || 0),
+                custo_manutencao: parseFloat(document.getElementById('modal-c-manutencao').value || 0),
+                obs_manutencao: document.getElementById('modal-obs-manutencao').value || "",
+                status: document.getElementById('modal-status').value
+            };
+
+            db.collection("fretes").doc(id).update(dadosAtualizados).then(() => {
+                alert("Frete atualizado com sucesso!");
+                fecharModalTratar();
+            }).catch(err => {
+                console.error("Erro ao atualizar: ", err);
+                alert("Erro ao salvar alterações no banco.");
+            });
+        }
+
+        function renderizarGrafico() {
+            const ctx = document.getElementById('graficoGanhos');
+            if(!ctx) return;
+
+            // Agrupa os últimos 6 meses para exibição gráfica
+            const mesesMap = {};
+            const hoje = new Date();
+            
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const label = d.toLocaleString('pt-BR', { month: 'short' }).toUpperCase();
+                mesesMap[chave] = { label: label, faturamento: 0, lucro: 0 };
+            }
+
+            cacheFretes.forEach(f => {
+                if (f.status === 'Concluído' && f.data) {
+                    const chave = f.data.substring(0, 7);
+                    if (mesesMap[chave]) {
+                        const receita = f.valor || 0;
+                        const custo = (f.custo_gasolina || 0) + (f.custo_ajudante || 0) + (f.custo_pedagio || 0) + (f.custo_manutencao || 0);
+                        mesesMap[chave].faturamento += receita;
+                        mesesMap[chave].lucro += (receita - custo);
+                    }
+                }
+            });
+
+            const labels = Object.values(mesesMap).map(m => m.label);
+            const dadosFaturamento = Object.values(mesesMap).map(m => m.faturamento);
+            const dadosLucro = Object.values(mesesMap).map(m => m.lucro);
+
+            if (meuGrafico) {
+                meuGrafico.destroy();
+            }
+
+            meuGrafico = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Faturamento Bruto',
+                            data: dadosFaturamento,
+                            backgroundColor: '#3B82F6'
+                        },
+                        {
+                            label: 'Lucro Líquido',
+                            data: dadosLucro,
+                            backgroundColor: '#10B981'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
