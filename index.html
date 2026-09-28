@@ -3,30 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Fretes & Mudanças (Nuvem)</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Controle de Fretes, Mudanças & Guincho (Nuvem)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen">
 
+    <!-- NAV BAR -->
     <nav class="bg-blue-600 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <span class="text-xl font-bold"><i class="fas fa-truck mr-2"></i>TIAGO FRETE</span>
-            <div class="space-x-1 sm:space-x-2 flex items-center">
-                <button onclick="switchTab('dashboard')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-chart-pie mr-1"></i>Dashboard</button>
-                <button onclick="switchTab('novo-frete')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-plus mr-1"></i>Novo</button>
-                <button onclick="switchTab('pendentes')" class="relative px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base bg-blue-800 font-semibold">
-                    <i class="fas fa-clock mr-1"></i>Pendentes
-                    <span id="badge-contador-pendentes" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border border-white">0</span>
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-truck text-2xl text-yellow-300"></i>
+                <span class="text-xl font-bold tracking-tight">TIAGO FRETE & GUINCHO</span>
+            </div>
+            <div class="space-x-1 sm:space-x-2 flex items-center flex-wrap">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3 py-2 rounded-lg hover:bg-blue-700 transition text-xs sm:text-sm font-semibold flex items-center gap-1 bg-blue-700">
+                    <i class="fas fa-chart-pie"></i><span>Dashboard</span>
                 </button>
-                <button onclick="switchTab('pesquisa')" class="px-2 sm:px-3 py-2 rounded hover:bg-blue-700 transition text-sm sm:text-base"><i class="fas fa-search mr-1"></i>Pesquisar</button>
+                <button onclick="switchTab('novo-frete')" id="nav-novo-frete" class="px-3 py-2 rounded-lg hover:bg-blue-700 transition text-xs sm:text-sm font-semibold flex items-center gap-1">
+                    <i class="fas fa-plus"></i><span>Novo Servico</span>
+                </button>
+                <button onclick="switchTab('pendentes')" id="nav-pendentes" class="relative px-3 py-2 rounded-lg hover:bg-blue-700 transition text-xs sm:text-sm font-semibold flex items-center gap-1">
+                    <i class="fas fa-clock"></i><span>Pendentes</span>
+                    <span id="badge-contador-pendentes" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border border-white font-bold">0</span>
+                </button>
+                <button onclick="switchTab('pesquisa')" id="nav-pesquisa" class="px-3 py-2 rounded-lg hover:bg-blue-700 transition text-xs sm:text-sm font-semibold flex items-center gap-1">
+                    <i class="fas fa-search"></i><span>Pesquisar</span>
+                </button>
             </div>
         </div>
     </nav>
 
-    <div id="loading-bar" class="bg-yellow-500 text-white text-center py-1 text-xs font-semibold hidden">
-        <i class="fas fa-sync fa-spin mr-1"></i> Atualizando dados com a nuvem...
+    <!-- LOADING BAR -->
+    <div id="loading-bar" class="bg-amber-500 text-white text-center py-1.5 text-xs font-semibold shadow-inner hidden">
+        <i class="fas fa-sync fa-spin mr-1"></i> Sincronizando dados com a nuvem...
     </div>
 
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -34,75 +52,121 @@
         <!-- ABA DASHBOARD -->
         <section id="tab-dashboard" class="tab-content">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <h2 class="text-2xl font-bold text-gray-700">Visão Geral Financeira</h2>
-                <div class="flex items-center gap-2 bg-white p-2 rounded shadow-sm border w-full sm:w-auto">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Visao Geral Financeira</h2>
+                    <p class="text-xs text-gray-500">Acompanhamento consolidado de Fretes, Mudancas e Serviços de Guincho</p>
+                </div>
+                <div class="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border w-full sm:w-auto">
                     <i class="fas fa-calendar-alt text-blue-500 pl-1"></i>
                     <select id="dash-filtro-mes" onchange="processarDados()" class="bg-transparent focus:outline-none text-sm font-semibold text-gray-700 w-full">
                     </select>
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-blue-500">
-                    <p class="text-xs text-gray-400 uppercase font-bold">Faturamento Bruto</p>
-                    <p id="dash-faturamento" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
-                    <span id="dash-qtd-fretes" class="text-xs text-gray-400">0 concluídos no mês</span>
+            <!-- CARDS DE METRICAS CHAVE -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+                <!-- FRETE CARD -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Frete & Mudanca</p>
+                        <i class="fas fa-box text-blue-500 text-sm"></i>
+                    </div>
+                    <p id="dash-faturamento-frete" class="text-xl font-bold text-gray-800">R$ 0,00</p>
+                    <span id="dash-qtd-fretes" class="text-xs text-gray-400">0 realizados</span>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-amber-500">
-                    <p class="text-xs text-gray-400 uppercase font-bold">Faturamento Pendente</p>
-                    <p id="dash-pendente" class="text-2xl font-bold text-amber-600">R$ 0,00</p>
-                    <span id="dash-qtd-pendentes" class="text-xs text-gray-400">0 serviços pendentes</span>
+
+                <!-- GUINCHO CARD -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-purple-500">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Servicos Guincho</p>
+                        <i class="fas fa-truck-pickup text-purple-500 text-sm"></i>
+                    </div>
+                    <p id="dash-faturamento-guincho" class="text-xl font-bold text-purple-700">R$ 0,00</p>
+                    <span id="dash-qtd-guinchos" class="text-xs text-gray-400">0 guinchos</span>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-red-500">
-                    <p class="text-xs text-gray-400 uppercase font-bold">Total de Despesas</p>
-                    <p id="dash-despesas" class="text-2xl font-bold text-red-600">R$ 0,00</p>
+
+                <!-- FATURAMENTO TOTAL -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-cyan-500">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Faturamento Bruto</p>
+                        <i class="fas fa-hand-holding-usd text-cyan-500 text-sm"></i>
+                    </div>
+                    <p id="dash-faturamento" class="text-xl font-bold text-cyan-800">R$ 0,00</p>
+                    <span id="dash-qtd-total" class="text-xs text-gray-400">Soma de Entradas</span>
+                </div>
+
+                <!-- PENDENTES CARD -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-[11px] text-gray-400 uppercase font-bold tracking-wider">A Receber / Pendente</p>
+                        <i class="fas fa-clock text-amber-500 text-sm"></i>
+                    </div>
+                    <p id="dash-pendente" class="text-xl font-bold text-amber-600">R$ 0,00</p>
+                    <span id="dash-qtd-pendentes" class="text-xs text-gray-400">0 pendentes</span>
+                </div>
+
+                <!-- DESPESAS CARD -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Total Despesas</p>
+                        <i class="fas fa-gas-pump text-red-500 text-sm"></i>
+                    </div>
+                    <p id="dash-despesas" class="text-xl font-bold text-red-600">R$ 0,00</p>
                     <span class="text-xs text-gray-400">Custos operacionais</span>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-green-500">
-                    <p class="text-xs text-gray-400 uppercase font-bold">Lucro Líquido (No Bolso)</p>
-                    <p id="dash-lucro-real" class="text-2xl font-bold text-green-600">R$ 0,00</p>
-                    <span id="dash-Margem" class="text-xs text-green-500 font-semibold">Margem: 0%</span>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-yellow-500">
-                    <p class="text-xs text-gray-400 uppercase font-bold">Status dos Serviços</p>
-                    <p id="dash-status-resumo" class="text-base font-bold text-gray-700 mt-1">0 P | 0 A | 0 C</p>
-                    <span class="text-xs text-gray-400">Pendentes / Andando / Feitos</span>
+
+                <!-- LUCRO LIQUIDO (SOMANDO TUDO) -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500 bg-gradient-to-br from-green-50/50 to-white">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Lucro Liquido Total</p>
+                        <i class="fas fa-wallet text-green-600 text-sm"></i>
+                    </div>
+                    <p id="dash-lucro-real" class="text-xl font-bold text-green-600">R$ 0,00</p>
+                    <span id="dash-Margem" class="text-xs text-green-600 font-semibold">Margem: 0%</span>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-                <h3 class="text-sm font-bold mb-3 text-gray-500 uppercase tracking-wider"><i class="fas fa-receipt mr-1 text-red-500"></i>Onde foi o dinheiro neste mês?</h3>
+            <!-- DETALHAMENTO DE DESPESAS -->
+            <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border">
+                <h3 class="text-xs font-bold mb-3 text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fas fa-receipt text-red-500"></i>Onde foi o dinheiro neste mes? (Frete + Guincho)
+                </h3>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                    <div class="bg-gray-50 p-3 rounded border">
-                        <span class="block text-xs text-gray-400 font-medium"><i class="fas fa-gas-pump text-orange-500 mr-1"></i>Combustível</span>
-                        <span id="custo-gasolina" class="text-base font-bold text-gray-700">R$ 0,00</span>
+                    <div class="bg-gray-50 p-3 rounded-lg border">
+                        <span class="block text-xs text-gray-500 font-medium"><i class="fas fa-gas-pump text-orange-500 mr-1"></i>Combustivel</span>
+                        <span id="custo-gasolina" class="text-base font-bold text-gray-800">R$ 0,00</span>
                     </div>
-                    <div class="bg-gray-50 p-3 rounded border">
-                        <span class="block text-xs text-gray-400 font-medium"><i class="fas fa-user-friends text-purple-500 mr-1"></i>Ajudantes</span>
-                        <span id="custo-ajudante" class="text-base font-bold text-gray-700">R$ 0,00</span>
+                    <div class="bg-gray-50 p-3 rounded-lg border">
+                        <span class="block text-xs text-gray-500 font-medium"><i class="fas fa-user-friends text-purple-500 mr-1"></i>Ajudantes / Operadores</span>
+                        <span id="custo-ajudante" class="text-base font-bold text-gray-800">R$ 0,00</span>
                     </div>
-                    <div class="bg-gray-50 p-3 rounded border">
-                        <span class="block text-xs text-gray-400 font-medium"><i class="fas fa-road text-blue-500 mr-1"></i>Pedágios</span>
-                        <span id="custo-pedagio" class="text-base font-bold text-gray-700">R$ 0,00</span>
+                    <div class="bg-gray-50 p-3 rounded-lg border">
+                        <span class="block text-xs text-gray-500 font-medium"><i class="fas fa-road text-blue-500 mr-1"></i>Pedagios</span>
+                        <span id="custo-pedagio" class="text-base font-bold text-gray-800">R$ 0,00</span>
                     </div>
-                    <div class="bg-gray-50 p-3 rounded border">
-                        <span class="block text-xs text-gray-400 font-medium"><i class="fas fa-wrench text-red-500 mr-1"></i>Manutenção</span>
-                        <span id="custo-manutencao" class="text-base font-bold text-gray-700">R$ 0,00</span>
+                    <div class="bg-gray-50 p-3 rounded-lg border">
+                        <span class="block text-xs text-gray-500 font-medium"><i class="fas fa-wrench text-red-500 mr-1"></i>Manutencao</span>
+                        <span id="custo-manutencao" class="text-base font-bold text-gray-800">R$ 0,00</span>
                     </div>
                 </div>
             </div>
 
+            <!-- GRAFICO E LISTA RECENTE -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white rounded-lg shadow-sm p-5 lg:col-span-2">
-                    <h3 class="text-lg font-bold mb-4 text-gray-700"><i class="fas fa-chart-bar mr-2 text-blue-500"></i>Evolução Mensal (Faturamento vs Lucro)</h3>
+                <div class="bg-white rounded-xl shadow-sm p-5 lg:col-span-2 border">
+                    <h3 class="text-base font-bold mb-4 text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-chart-bar text-blue-500"></i>Evolucao Mensal (Faturamento vs Lucro Liquido)
+                    </h3>
                     <div class="h-64">
                         <canvas id="graficoGanhos"></canvas>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-sm p-5">
-                    <h3 class="text-lg font-bold mb-4 text-gray-700"><i class="fas fa-list mr-2 text-blue-500"></i>Lançamentos do Mês</h3>
-                    <div class="overflow-y-auto max-h-64">
+                <div class="bg-white rounded-xl shadow-sm p-5 border">
+                    <h3 class="text-base font-bold mb-4 text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-list text-blue-500"></i>Lancamentos do Mes
+                    </h3>
+                    <div class="overflow-y-auto max-h-64 pr-1">
                         <ul id="lista-ultimos-fretes" class="divide-y divide-gray-100 text-sm">
                             <li class="text-center py-4 text-gray-400">Carregando...</li>
                         </ul>
@@ -111,155 +175,204 @@
             </div>
         </section>
 
-        <!-- ABA NOVO FRETE -->
+        <!-- ABA NOVO SERVIÇO (FRETE E GUINCHO) -->
         <section id="tab-novo-frete" class="tab-content hidden">
-            <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-sm p-6">
-                <h2 class="text-2xl font-bold mb-6 text-gray-700 border-b pb-2"><i class="fas fa-plus-circle mr-2 text-green-500"></i>Cadastrar Novo Frete</h2>
+            <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-sm p-6 border">
+                <div class="border-b pb-4 mb-5">
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-green-500"></i>Cadastrar Novo Servico
+                    </h2>
+                    <p class="text-xs text-gray-500">Selecione o tipo de servico abaixo para carregar os campos especificos.</p>
+                </div>
+
+                <!-- SELETOR TIPO DE SERVIÇO -->
+                <div class="mb-6 bg-gray-100 p-1.5 rounded-xl flex gap-2">
+                    <button type="button" id="btn-tipo-frete" onclick="selecionarTipoServico('Frete')" class="flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-blue-600 text-white shadow-sm">
+                        <i class="fas fa-box"></i>Frete / Mudanca
+                    </button>
+                    <button type="button" id="btn-tipo-guincho" onclick="selecionarTipoServico('Guincho')" class="flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-gray-200 text-gray-700 hover:bg-gray-300">
+                        <i class="fas fa-truck-pickup"></i>Servico de Guincho
+                    </button>
+                </div>
                 
                 <form id="form-frete" onsubmit="salvarFrete(event)" class="space-y-4">
+                    <input type="hidden" id="tipoServico" value="Frete">
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Nome do Cliente *</label>
-                            <input type="text" id="nome" required class="w-full p-2 border rounded focus:outline-blue-500">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Nome do Cliente *</label>
+                            <input type="text" id="nome" required placeholder="Ex: Joao Silva" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Telefone/WhatsApp *</label>
-                            <input type="tel" id="telefone" required placeholder="(19) 99999-9999" class="w-full p-2 border rounded focus:outline-blue-500">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Telefone/WhatsApp *</label>
+                            <input type="tel" id="telefone" required placeholder="(19) 99999-9999" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Data do Serviço *</label>
-                            <input type="date" id="data" required class="w-full p-2 border rounded focus:outline-blue-500">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Data do Servico *</label>
+                            <input type="date" id="data" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Horário Agendado</label>
-                            <input type="time" id="hora" class="w-full p-2 border rounded focus:outline-blue-500">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Horario Agendado</label>
+                            <input type="time" id="hora" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Valor Cobrado (R$) *</label>
-                            <input type="number" step="0.01" id="valor" required placeholder="0,00" class="w-full p-2 border text-lg font-bold text-green-700 bg-green-50 rounded focus:outline-blue-500">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Valor Cobrado (R$) *</label>
+                            <input type="number" step="0.01" id="valor" required placeholder="0,00" class="w-full p-2.5 border text-lg font-bold text-green-700 bg-green-50 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none">
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- CAMPOS DINÂMICOS CONFORME O TIPO DE SERVIÇO -->
+                    <!-- CAMPO EXCLUSIVO DE FRETE -->
+                    <div id="campo-especifico-frete" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Local do Serviço</label>
-                            <select id="tipoLocal" class="w-full p-2 border rounded focus:outline-blue-500">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Local do Servico</label>
+                            <select id="tipoLocal" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                                 <option value="Casa">Casa</option>
                                 <option value="Apartamento">Apartamento</option>
                                 <option value="Diversos">Diversos / Comercial</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Ajudante integrado?</label>
-                            <select id="ajudante" class="w-full p-2 border rounded focus:outline-blue-500">
-                                <option value="Sem Ajudante">Sem Ajudante (Só motorista)</option>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Ajudante integrado?</label>
+                            <select id="ajudante" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                                <option value="Sem Ajudante">Sem Ajudante (So motorista)</option>
                                 <option value="Com Ajudante">Com Ajudante</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-4">
-                        <h3 class="text-sm font-bold text-red-800 uppercase tracking-wide mb-3"><i class="fas fa-gas-pump mr-1"></i>Custos e Despesas deste Serviço (Deixe 0 se não houver)</h3>
+                    <!-- CAMPO EXCLUSIVO DE GUINCHO -->
+                    <div id="campo-especifico-guincho" class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden bg-purple-50 p-3.5 rounded-xl border border-purple-200">
+                        <div>
+                            <label class="block text-xs font-bold text-purple-900 uppercase mb-1">Modelo / Marca do Veiculo *</label>
+                            <input type="text" id="veiculo_modelo" placeholder="Ex: Gol 1.0, Civic, Moto Titan..." class="w-full p-2 border rounded-lg bg-white focus:outline-purple-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-purple-900 uppercase mb-1">Placa do Veiculo (Opcional)</label>
+                            <input type="text" id="veiculo_placa" placeholder="ABC-1234 ou ABC1D23" class="w-full p-2 border rounded-lg bg-white focus:outline-purple-500 text-sm uppercase">
+                        </div>
+                    </div>
+
+                    <!-- DESPESAS E CUSTOS OPERACIONAIS -->
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                        <h3 class="text-xs font-bold text-red-800 uppercase tracking-wider mb-3 flex items-center gap-1">
+                            <i class="fas fa-gas-pump"></i>Custos e Despesas deste Servico (Deixe 0 se nao houver)
+                        </h3>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">Gasolina (R$)</label>
-                                <input type="number" step="0.01" id="custo_gasolina" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                                <input type="number" step="0.01" id="custo_gasolina" value="0" class="w-full p-2 border bg-white rounded-lg focus:outline-red-500 text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">Ajudante Pago (R$)</label>
-                                <input type="number" step="0.01" id="custo_ajudante" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Ajudante/Op. (R$)</label>
+                                <input type="number" step="0.01" id="custo_ajudante" value="0" class="w-full p-2 border bg-white rounded-lg focus:outline-red-500 text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">Pedágios (R$)</label>
-                                <input type="number" step="0.01" id="custo_pedagio" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Pedagios (R$)</label>
+                                <input type="number" step="0.01" id="custo_pedagio" value="0" class="w-full p-2 border bg-white rounded-lg focus:outline-red-500 text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">Manutenção (R$)</label>
-                                <input type="number" step="0.01" id="custo_manutencao" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Manutencao (R$)</label>
+                                <input type="number" step="0.01" id="custo_manutencao" value="0" class="w-full p-2 border bg-white rounded-lg focus:outline-red-500 text-sm">
                             </div>
                         </div>
-                        <div class="mt-2">
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Obs. de Manutenção (Opcional)</label>
-                            <input type="text" id="obs_manutencao" placeholder="Ex: Óleo do compressor, pneu, revisão da Kombi..." class="w-full p-2 border text-xs bg-white rounded focus:outline-red-500">
+                        <div class="mt-2.5">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Obs. de Manutencao / Detalhes de Custo</label>
+                            <input type="text" id="obs_manutencao" placeholder="Ex: Troca de pneu, comissao de auxilio, reboque extra..." class="w-full p-2 border text-xs bg-white rounded-lg focus:outline-red-500">
                         </div>
+                    </div>
+
+                    <!-- ENDEREÇOS -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" id="lbl-saida">Endereco de Saida (Origem) *</label>
+                        <input type="text" id="saida" required placeholder="Rua, numero, bairro, cidade" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Endereço de Saída (Origem) *</label>
-                        <input type="text" id="saida" required placeholder="Rua, número, bairro, cidade" class="w-full p-2 border rounded focus:outline-blue-500">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" id="lbl-entrega">Endereco de Entrega (Destino) *</label>
+                        <input type="text" id="entrega" required placeholder="Rua, numero, bairro, cidade" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Endereço de Entrega (Destino) *</label>
-                        <input type="text" id="entrega" required placeholder="Rua, número, bairro, cidade" class="w-full p-2 border rounded focus:outline-blue-500">
-                    </div>
-
-                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 flex flex-col sm:flex-row justify-between items-center gap-3">
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-map-marked-alt text-blue-600 text-xl"></i>
+                    <!-- BOTÃO CALCULAR ROTA -->
+                    <div class="bg-blue-50 p-3.5 rounded-xl border border-blue-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <i class="fas fa-map-marked-alt text-blue-600 text-2xl"></i>
                             <div>
-                                <p class="text-xs font-bold text-blue-900">Distância do Percurso</p>
-                                <div class="flex items-center gap-1 mt-0.5">
-                                    <input type="number" id="distancia_km" placeholder="--" class="w-16 p-1 text-xs border rounded bg-white font-bold text-center">
+                                <p class="text-xs font-bold text-blue-900">Distancia do Percurso</p>
+                                <div class="flex items-center gap-1.5 mt-0.5">
+                                    <input type="number" id="distancia_km" placeholder="--" class="w-20 p-1.5 text-xs border rounded-lg bg-white font-bold text-center">
                                     <span class="text-xs text-gray-600 font-semibold">KM</span>
                                 </div>
                             </div>
                         </div>
-                        <button type="button" onclick="abrirGoogleMaps('saida', 'entrega')" class="w-full sm:w-auto bg-blue-600 text-white px-3 py-2 rounded text-xs font-bold hover:bg-blue-700 transition flex items-center justify-center gap-1 shadow-sm">
+                        <button type="button" onclick="abrirGoogleMaps('saida', 'entrega')" class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm">
                             <i class="fas fa-route"></i> Calcular KM e Ver Rota
                         </button>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Status Inicial</label>
-                        <select id="status" class="w-full p-2 border rounded focus:outline-blue-500">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Status Inicial</label>
+                        <select id="status" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                             <option value="Pendente">Pendente / Agendado</option>
                             <option value="Em Andamento">Em Andamento</option>
-                            <option value="Concluído">Concluído</option>
+                            <option value="Concluido">Concluido</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Observações do Frete</label>
-                        <textarea id="observacao" rows="2" placeholder="Detalhes da mudança, itens frágeis, ajudantes extras, etc..." class="w-full p-2 border rounded focus:outline-blue-500"></textarea>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Observacoes do Servico</label>
+                        <textarea id="observacao" rows="2" placeholder="Informacoes adicionais, estado do veiculo guinchado, itens de mudanca, etc..." class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
                     </div>
 
                     <div class="pt-2">
-                        <button type="submit" id="btn-salvar" class="w-full bg-green-600 text-white p-3 rounded font-bold hover:bg-green-700 transition shadow">
-                            <i class="fas fa-save mr-2"></i>Salvar Frete na Nuvem
+                        <button type="submit" id="btn-salvar" class="w-full bg-green-600 text-white p-3.5 rounded-xl font-bold hover:bg-green-700 transition shadow-md flex items-center justify-center gap-2 text-base">
+                            <i class="fas fa-save"></i>Salvar Servico na Nuvem
                         </button>
                     </div>
                 </form>
             </div>
         </section>
 
-        <!-- ABA PENDENTES E ORÇAMENTOS -->
+        <!-- ABA PENDENTES -->
         <section id="tab-pendentes" class="tab-content hidden">
-            <h2 class="text-2xl font-bold mb-2 text-gray-700"><i class="fas fa-clock mr-2 text-amber-500"></i>Fretes e Orçamentos Pendentes</h2>
-            <p class="text-sm text-gray-500 mb-6">Aqui ficam reunidos todos os fretes agendados e os orçamentos recebidos pelo site. Clique em "Tratar / Editar" para precificar, definir horários ou mudar para Em Andamento/Concluído.</p>
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-clock text-amber-500"></i>Pendentes e Agendamentos
+                </h2>
+                <p class="text-sm text-gray-500">Servicos de Frete e Guincho aguardando confirmacao ou execucao. Clique em "Tratar / Editar" para precificar e atualizar.</p>
+            </div>
             
             <div id="lista-pendentes" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             </div>
         </section>
 
-        <!-- ABA PESQUISA (Apenas Em Andamento e Concluídos, do mais recente para o mais antigo) -->
+        <!-- ABA PESQUISA -->
         <section id="tab-pesquisa" class="tab-content hidden">
-            <h2 class="text-2xl font-bold mb-2 text-gray-700"><i class="fas fa-history mr-2 text-blue-500"></i>Histórico de Serviços Confirmados</h2>
-            <p class="text-sm text-gray-500 mb-6">Exibe serviços Em Andamento e Concluídos, ordenados do mais recente realizado até o primeiro.</p>
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-history text-blue-500"></i>Historico de Servicos Confirmados
+                </h2>
+                <p class="text-sm text-gray-500">Lista completa de servicos de Frete e Guincho em andamento ou concluidos.</p>
+            </div>
             
-            <div class="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col sm:flex-row gap-4 items-center">
+            <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col sm:flex-row gap-4 items-center border">
                 <div class="relative flex-1 w-full">
-                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                    <input type="text" id="busca" oninput="filtrarEBuscar()" placeholder="Buscar por cliente, endereço, observações..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-blue-500">
+                    <i class="fas fa-search absolute left-3.5 top-3.5 text-gray-400"></i>
+                    <input type="text" id="busca" oninput="filtrarEBuscar()" placeholder="Buscar por cliente, veiculo, endereco, observacoes..." class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </div>
-                <div class="w-full sm:w-auto">
-                    <select id="filtro-status" onchange="filtrarEBuscar()" class="w-full p-2 border rounded focus:outline-blue-500 bg-white">
-                        <option value="Todos">Todos os Confirmados (Andamento/Concluído)</option>
+                <div class="w-full sm:w-auto flex gap-2">
+                    <select id="filtro-tipo" onchange="filtrarEBuscar()" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-sm font-semibold">
+                        <option value="Todos">Todos os Tipos (Frete + Guincho)</option>
+                        <option value="Frete">Apenas Frete</option>
+                        <option value="Guincho">Apenas Guincho</option>
+                    </select>
+                    <select id="filtro-status" onchange="filtrarEBuscar()" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-sm font-semibold">
+                        <option value="Todos">Todos os Confirmados</option>
                         <option value="Em Andamento">Em Andamento</option>
-                        <option value="Concluído">Concluídos</option>
+                        <option value="Concluido">Concluidos</option>
                     </select>
                 </div>
             </div>
@@ -269,101 +382,111 @@
         </section>
     </div>
 
-    <!-- MODAL TRATAR/EDITAR FRETE -->
+    <!-- MODAL TRATAR / EDITAR FRETE OU GUINCHO -->
     <div id="modal-tratar" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 text-gray-800">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 text-gray-800 border">
             <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-calculator text-blue-600 mr-2"></i>Tratar e Precificar Pedido</h3>
-                <button onclick="fecharModalTratar()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-edit text-blue-600"></i>Tratar e Atualizar Servico
+                </h3>
+                <button onclick="fecharModalTratar()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
             </div>
             
             <form id="form-tratar-orcamento" onsubmit="atualizarOrcamentoTratado(event)">
                 <input type="hidden" id="modal-id">
+                <input type="hidden" id="modal-tipoServico">
                 
-                <div class="bg-blue-50 p-3 rounded-lg text-sm space-y-1 mb-4 border border-blue-100">
+                <div class="bg-blue-50 p-4 rounded-xl text-sm space-y-1.5 mb-4 border border-blue-100">
+                    <div class="flex justify-between items-center mb-1">
+                        <span id="modal-badge-tipo" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-600 text-white">Frete</span>
+                        <span class="text-xs text-blue-800 font-semibold">ID: <span id="modal-info-id"></span></span>
+                    </div>
                     <p><strong>Cliente:</strong> <span id="modal-info-nome" class="text-blue-900 font-bold"></span></p>
-                    <p><strong>Local:</strong> <span id="modal-info-local"></span> | <strong>Ajudantes solicitados:</strong> <span id="modal-info-ajudante"></span></p>
+                    <p id="modal-linha-especifica"></p>
                     <p><strong>Origem:</strong> <span id="modal-info-saida"></span></p>
                     <p><strong>Destino:</strong> <span id="modal-info-entrega"></span></p>
                     
-                    <div class="pt-2 mt-1 border-t border-blue-200/60 flex items-center justify-between">
+                    <div class="pt-2 mt-2 border-t border-blue-200/60 flex items-center justify-between">
                         <span class="text-xs font-bold text-blue-800"><i class="fas fa-map-marker-alt mr-1"></i>Visualizar Trajeto:</span>
-                        <button type="button" onclick="abrirGoogleMaps('modal-info-saida', 'modal-info-entrega', true)" class="bg-white border border-blue-400 text-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-50 transition flex items-center gap-1">
+                        <button type="button" onclick="abrirGoogleMaps('modal-info-saida', 'modal-info-entrega', true)" class="bg-white border border-blue-400 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-50 transition flex items-center gap-1">
                             <i class="fas fa-external-link-alt text-[10px]"></i> Abrir Rota no GPS
                         </button>
                     </div>
 
-                    <div class="bg-white p-2 rounded border mt-2">
-                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Itens para Transportar / Obs:</p>
-                        <p id="modal-info-obs" class="italic text-gray-700 whitespace-pre-line"></p>
+                    <div class="bg-white p-2.5 rounded-lg border mt-2">
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Observacoes / Itens:</p>
+                        <p id="modal-info-obs" class="italic text-gray-700 whitespace-pre-line text-xs"></p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">Definir Data *</label>
-                        <input type="date" id="modal-data" required class="w-full p-2 border rounded focus:outline-blue-500">
+                        <input type="date" id="modal-data" required class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Definir Horário</label>
-                        <input type="time" id="modal-hora" class="w-full p-2 border rounded focus:outline-blue-500">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Definir Horario</label>
+                        <input type="time" id="modal-hora" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-green-700 mb-1">Preço Cobrado (R$) *</label>
-                        <input type="number" step="0.01" id="modal-valor" required placeholder="Ex: 350.00" class="w-full p-2 border font-bold text-green-700 bg-green-50 rounded focus:outline-blue-500">
+                        <label class="block text-sm font-bold text-green-700 mb-1">Preco Cobrado (R$) *</label>
+                        <input type="number" step="0.01" id="modal-valor" required placeholder="Ex: 350.00" class="w-full p-2 border font-bold text-green-700 bg-green-50 rounded-lg focus:ring-2 focus:ring-green-500">
                     </div>
                 </div>
 
-                <div class="bg-red-50 p-4 rounded-lg border border-red-100 mb-4">
-                    <h4 class="text-xs font-bold text-red-800 uppercase tracking-wide mb-3"><i class="fas fa-gas-pump mr-1"></i>Previsão de Custos Operacionais</h4>
+                <div class="bg-red-50 p-4 rounded-xl border border-red-100 mb-4">
+                    <h4 class="text-xs font-bold text-red-800 uppercase tracking-wider mb-3 flex items-center gap-1">
+                        <i class="fas fa-gas-pump"></i>Custos Operacionais
+                    </h4>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 mb-1">Gasolina (R$)</label>
-                            <input type="number" step="0.01" id="modal-c-gasolina" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                            <input type="number" step="0.01" id="modal-c-gasolina" value="0" class="w-full p-2 border bg-white rounded-lg focus:outline-red-500 text-sm">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Ajudante (R$)</label>
-                            <input type="number" step="0.01" id="modal-c-ajudante" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Ajudante/Op. (R$)</label>
+                            <input type="number" step="0.01" id="modal-c-ajudante" value="0" class="w-full p-2 border bg-white rounded-lg focus:outline-red-500 text-sm">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Pedágios (R$)</label>
-                            <input type="number" step="0.01" id="modal-c-pedagio" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Pedagios (R$)</label>
+                            <input type="number" step="0.01" id="modal-c-pedagio" value="0" class="w-full p-2 border bg-white rounded-lg focus:outline-red-500 text-sm">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Manutenção (R$)</label>
-                            <input type="number" step="0.01" id="modal-c-manutencao" value="0" class="w-full p-2 border bg-white rounded focus:outline-red-500">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Manutencao (R$)</label>
+                            <input type="number" step="0.01" id="modal-c-manutencao" value="0" class="w-full p-2 border bg-white rounded-lg focus:outline-red-500 text-sm">
                         </div>
                     </div>
-                    <div class="mt-2">
+                    <div class="mt-2.5">
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Notas de Custo (Opcional)</label>
-                        <input type="text" id="modal-obs-manutencao" placeholder="Ex: Combustível estimado da Kombi..." class="w-full p-2 border text-xs bg-white rounded focus:outline-red-500">
+                        <input type="text" id="modal-obs-manutencao" placeholder="Ex: Detalhes de despesa..." class="w-full p-2 border text-xs bg-white rounded-lg focus:outline-red-500">
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-5">
                     <label class="block text-sm font-bold text-gray-700 mb-1">Alterar Status para:</label>
-                    <select id="modal-status" class="w-full p-2 border rounded focus:outline-blue-500 bg-white">
+                    <select id="modal-status" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white font-semibold">
                         <option value="Pendente">Ainda Pendente</option>
                         <option value="Em Andamento">Confirmado / Em Andamento</option>
-                        <option value="Concluído">Serviço Realizado e Concluído</option>
+                        <option value="Concluido">Servico Realizado e Concluido</option>
                     </select>
                 </div>
 
-                <div class="flex gap-2 justify-end pt-2 border-t">
-                    <button type="button" onclick="fecharModalTratar()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded transition">Cancelar</button>
-                    <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded transition flex items-center shadow">
-                        <i class="fas fa-check mr-2"></i>Aprovar e Lançar no Sistema
+                <div class="flex gap-2 justify-end pt-3 border-t">
+                    <button type="button" onclick="fecharModalTratar()" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition text-sm">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition flex items-center shadow-sm text-sm gap-2">
+                        <i class="fas fa-check"></i>Aprovar e Salvar
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- SDKs FIREBASE -->
+    <!-- SDKs FIREBASE (COMPAT MODULES) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <script>
+        // CONFIGURAÇÃO DO FIREBASE DO TIAGO FRETE
         const firebaseConfig = {
             apiKey: "AIzaSyDqHHQ1uzScfN09vJgvmuHnYnPCyV5_mPo",
             authDomain: "tiago-frete.firebaseapp.com",
@@ -381,15 +504,48 @@
         let meuGrafico = null;
 
         window.onload = function() {
+            // Inicializar com data de hoje no campo de cadastro
+            const hoje = new Date().toISOString().split('T')[0];
+            const elemData = document.getElementById('data');
+            if(elemData) elemData.value = hoje;
+
             escutarBanco();
         };
+
+        function selecionarTipoServico(tipo) {
+            document.getElementById('tipoServico').value = tipo;
+            const btnFrete = document.getElementById('btn-tipo-frete');
+            const btnGuincho = document.getElementById('btn-tipo-guincho');
+            const secFrete = document.getElementById('campo-especifico-frete');
+            const secGuincho = document.getElementById('campo-especifico-guincho');
+            const lblSaida = document.getElementById('lbl-saida');
+            const lblEntrega = document.getElementById('lbl-entrega');
+
+            if (tipo === 'Frete') {
+                btnFrete.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-blue-600 text-white shadow-sm";
+                btnGuincho.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-gray-200 text-gray-700 hover:bg-gray-300";
+                secFrete.classList.remove('hidden');
+                secGuincho.classList.add('hidden');
+                lblSaida.innerText = "Endereco de Saida (Origem) *";
+                lblEntrega.innerText = "Endereco de Entrega (Destino) *";
+                document.getElementById('veiculo_modelo').required = false;
+            } else {
+                btnFrete.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-gray-200 text-gray-700 hover:bg-gray-300";
+                btnGuincho.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-purple-600 text-white shadow-sm";
+                secFrete.classList.add('hidden');
+                secGuincho.classList.remove('hidden');
+                lblSaida.innerText = "Local de Retirada do Veiculo (Origem) *";
+                lblEntrega.innerText = "Local de Destino / Oficina / Garagem *";
+                document.getElementById('veiculo_modelo').required = true;
+            }
+        }
 
         function abrirGoogleMaps(idOrigem, idDestino, deTextoPlano = false) {
             let origem = deTextoPlano ? document.getElementById(idOrigem).innerText : document.getElementById(idOrigem).value;
             let destino = deTextoPlano ? document.getElementById(idDestino).innerText : document.getElementById(idDestino).value;
 
             if (!origem || !destino || origem.trim() === "" || destino.trim() === "") {
-                alert("Por favor, preencha tanto o endereço de Saída quanto o de Entrega primeiro!");
+                alert("Por favor, preencha tanto o endereco de Origem quanto o de Destino primeiro!");
                 return;
             }
 
@@ -403,9 +559,13 @@
             db.collection("fretes").onSnapshot((snapshot) => {
                 cacheFretes = [];
                 snapshot.forEach((doc) => {
-                    let frete = doc.data();
-                    frete.id = doc.id;
-                    cacheFretes.push(frete);
+                    let item = doc.data();
+                    item.id = doc.id;
+                    // Retrocompatibilidade para cadastros antigos sem tipoServico
+                    if(!item.tipoServico) {
+                        item.tipoServico = 'Frete';
+                    }
+                    cacheFretes.push(item);
                 });
 
                 atualizarFiltroMeses();
@@ -414,13 +574,25 @@
                 document.getElementById('loading-bar').classList.add('hidden');
             }, (error) => {
                 console.error("Erro ao escutar banco: ", error);
-                alert("Erro ao conectar com a nuvem.");
+                document.getElementById('loading-bar').classList.add('hidden');
             });
         }
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            // Atualiza botões do menu
+            ['dashboard', 'novo-frete', 'pendentes', 'pesquisa'].forEach( t => {
+                const navBtn = document.getElementById(`nav-${t}`);
+                if(navBtn) {
+                    if(t === tabName) {
+                        navBtn.classList.add('bg-blue-700');
+                    } else {
+                        navBtn.classList.remove('bg-blue-700');
+                    }
+                }
+            });
         }
 
         function formatarMoeda(valor) {
@@ -428,19 +600,29 @@
         }
 
         function formatarDataEHora(dataString, horaString) {
-            if(!dataString) return "Data não agendada";
-            const [ano, mes, dia] = dataString.split('-');
+            if(!dataString) return "Data nao agendada";
+            const partes = dataString.split('-');
+            if(partes.length !== 3) return dataString;
+            const [ano, mes, dia] = partes;
             const dataFormatada = `${dia}/${mes}/${ano}`;
             return horaString ? `${dataFormatada} às ${horaString}` : dataFormatada;
         }
 
         function badgeStatus(status) {
             switch(status) {
-                case 'Pendente': return 'bg-yellow-100 text-yellow-800';
-                case 'Em Andamento': return 'bg-blue-100 text-blue-800';
-                case 'Concluído': return 'bg-green-100 text-green-800';
-                default: return 'bg-gray-100 text-gray-800';
+                case 'Pendente': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                case 'Em Andamento': return 'bg-blue-100 text-blue-800 border-blue-200';
+                case 'Concluido': 
+                case 'Concluído': return 'bg-green-100 text-green-800 border-green-200';
+                default: return 'bg-gray-100 text-gray-800 border-gray-200';
             }
+        }
+
+        function badgeTipo(tipo) {
+            if(tipo === 'Guincho') {
+                return '<span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-purple-100 text-purple-800 border border-purple-200"><i class="fas fa-truck-pickup mr-1"></i>Guincho</span>';
+            }
+            return '<span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-blue-100 text-blue-800 border border-blue-200"><i class="fas fa-box mr-1"></i>Frete</span>';
         }
 
         function atualizarFiltroMeses() {
@@ -488,16 +670,21 @@
             event.preventDefault();
             const btn = document.getElementById('btn-salvar');
             btn.disabled = true;
-            btn.innerText = "Salvando na Nuvem...";
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Salvando na Nuvem...`;
 
-            const novoFrete = {
+            const tipoServico = document.getElementById('tipoServico').value;
+
+            const novoServico = {
+                tipoServico: tipoServico,
                 nome: document.getElementById('nome').value,
                 telefone: document.getElementById('telefone').value,
                 data: document.getElementById('data').value,
                 hora: document.getElementById('hora').value || "",
                 valor: parseFloat(document.getElementById('valor').value || 0),
-                tipoLocal: document.getElementById('tipoLocal').value,
-                ajudante: document.getElementById('ajudante').value,
+                tipoLocal: tipoServico === 'Frete' ? document.getElementById('tipoLocal').value : "",
+                ajudante: tipoServico === 'Frete' ? document.getElementById('ajudante').value : "",
+                veiculo_modelo: tipoServico === 'Guincho' ? document.getElementById('veiculo_modelo').value : "",
+                veiculo_placa: tipoServico === 'Guincho' ? document.getElementById('veiculo_placa').value : "",
                 saida: document.getElementById('saida').value,
                 entrega: document.getElementById('entrega').value,
                 distancia_km: parseFloat(document.getElementById('distancia_km').value || 0),
@@ -511,267 +698,419 @@
                 criadoEm: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            db.collection("fretes").add(novoFrete).then(() => {
-                alert("Frete salvo com sucesso!");
+            db.collection("fretes").add(novoServico).then(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-save"></i>Salvar Servico na Nuvem`;
                 document.getElementById('form-frete').reset();
+                // Restaurar data
+                document.getElementById('data').value = new Date().toISOString().split('T')[0];
+                selecionarTipoServico('Frete');
+                switchTab('dashboard');
+            }).catch((err) => {
+                console.error("Erro ao salvar: ", err);
+                alert("Erro ao salvar servico na nuvem.");
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Frete na Nuvem';
-                
-                if(novoFrete.status === 'Pendente') {
-                    switchTab('pendentes');
-                } else {
-                    switchTab('pesquisa');
-                }
-            }).catch(err => {
-                console.error("Erro ao salvar:", err);
-                alert("Erro ao salvar frete na nuvem.");
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Frete na Nuvem';
+                btn.innerHTML = `<i class="fas fa-save"></i>Salvar Servico na Nuvem`;
             });
-        }
-
-        function excluirFrete(id) {
-            const confirmacao = confirm("Tem certeza de que deseja CANCELAR / EXCLUIR este frete?\nEsta ação não poderá ser desfeita.");
-            if (confirmacao) {
-                db.collection("fretes").doc(id).delete().then(() => {
-                    alert("Frete removido com sucesso!");
-                }).catch((error) => {
-                    console.error("Erro ao apagar frete: ", error);
-                    alert("Erro ao apagar o frete na nuvem.");
-                });
-            }
         }
 
         function carregarDashboard() {
-            const mesSelecionado = document.getElementById('dash-filtro-mes').value;
-            let faturamento = 0, pendente = 0, despesas = 0;
-            let qtdConcluidos = 0, qtdPendentes = 0;
-            let cGasolina = 0, cAjudante = 0, cPedagio = 0, cManutencao = 0;
-            let pCount = 0, aCount = 0, cCount = 0;
+            const mesSel = document.getElementById('dash-filtro-mes').value;
 
-            const fretesDoMes = cacheFretes.filter(f => f.data && f.data.startsWith(mesSelecionado));
-            
-            // Ordena o resumo do mês do mais recente para o mais antigo
-            fretesDoMes.sort((a, b) => {
-                const dataA = (a.data || '') + 'T' + (a.hora || '00:00');
-                const dataB = (b.data || '') + 'T' + (b.hora || '00:00');
-                return dataB.localeCompare(dataA);
-            });
+            let fatFrete = 0;
+            let fatGuincho = 0;
+            let totalPendente = 0;
+            let totalDespesas = 0;
 
-            const listaUltimos = document.getElementById('lista-ultimos-fretes');
-            listaUltimos.innerHTML = '';
+            let cGasolina = 0;
+            let cAjudante = 0;
+            let cPedagio = 0;
+            let cManutencao = 0;
 
-            fretesDoMes.forEach(f => {
-                const totalCustosFrete = (f.custo_gasolina || 0) + (f.custo_ajudante || 0) + (f.custo_pedagio || 0) + (f.custo_manutencao || 0);
+            let qtdFretes = 0;
+            let qtdGuinchos = 0;
+            let qtdPendentes = 0;
 
-                if (f.status === 'Concluído') {
-                    faturamento += (f.valor || 0);
-                    despesas += totalCustosFrete;
-                    cGasolina += (f.custo_gasolina || 0);
-                    cAjudante += (f.custo_ajudante || 0);
-                    cPedagio += (f.custo_pedagio || 0);
-                    cManutencao += (f.custo_manutencao || 0);
-                    qtdConcluidos++;
-                    cCount++;
-                } else if (f.status === 'Pendente') {
-                    pendente += (f.valor || 0);
-                    qtdPendentes++;
-                    pCount++;
-                } else if (f.status === 'Em Andamento') {
-                    aCount++;
+            let countP = 0, countA = 0, countC = 0;
+
+            const ultimosLista = [];
+
+            cacheFretes.forEach(f => {
+                const ehDoMes = f.data && f.data.substring(0, 7) === mesSel;
+                const statusNormalizado = (f.status === 'Concluido' || f.status === 'Concluído') ? 'Concluido' : f.status;
+
+                if (ehDoMes) {
+                    if (statusNormalizado === 'Pendente') countP++;
+                    else if (statusNormalizado === 'Em Andamento') countA++;
+                    else if (statusNormalizado === 'Concluido') countC++;
+
+                    if (statusNormalizado === 'Concluido') {
+                        if (f.tipoServico === 'Guincho') {
+                            fatGuincho += (f.valor || 0);
+                            qtdGuinchos++;
+                        } else {
+                            fatFrete += (f.valor || 0);
+                            qtdFretes++;
+                        }
+
+                        cGasolina += (f.custo_gasolina || 0);
+                        cAjudante += (f.custo_ajudante || 0);
+                        cPedagio += (f.custo_pedagio || 0);
+                        cManutencao += (f.custo_manutencao || 0);
+
+                        ultimosLista.push(f);
+                    } else if (statusNormalizado === 'Pendente' || statusNormalizado === 'Em Andamento') {
+                        totalPendente += (f.valor || 0);
+                        if (statusNormalizado === 'Pendente') qtdPendentes++;
+                    }
                 }
-
-                listaUltimos.innerHTML += `
-                    <li class="py-2 flex justify-between items-center border-b border-gray-100 last:border-0">
-                        <div>
-                            <p class="font-bold text-gray-800 text-xs sm:text-sm">${f.nome}</p>
-                            <p class="text-[11px] text-gray-400">${formatarDataEHora(f.data, f.hora)}</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-xs ${f.status === 'Concluído' ? 'text-green-600' : 'text-amber-600'}">${formatarMoeda(f.valor)}</span>
-                            <button onclick="excluirFrete('${f.id}')" title="Cancelar/Excluir" class="text-red-500 hover:text-red-700 text-xs p-1">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </li>
-                `;
             });
 
-            if (fretesDoMes.length === 0) {
-                listaUltimos.innerHTML = '<li class="text-center py-4 text-gray-400 text-xs">Nenhum frete lançado neste mês.</li>';
-            }
+            totalDespesas = cGasolina + cAjudante + cPedagio + cManutencao;
+            const fatBrutoTotal = fatFrete + fatGuincho;
+            // LUCRO LÍQUIDO MANTÉM SOMANDO TUDO (FRETE + GUINCHO) MENOS DESPESAS
+            const lucroLiquidoTotal = fatBrutoTotal - totalDespesas;
+            const margem = fatBrutoTotal > 0 ? ((lucroLiquidoTotal / fatBrutoTotal) * 100).toFixed(1) : 0;
 
-            const lucroReal = faturamento - despesas;
-            const margem = faturamento > 0 ? ((lucroReal / faturamento) * 100).toFixed(1) : 0;
+            // Atualizar Mostradores
+            document.getElementById('dash-faturamento-frete').innerText = formatarMoeda(fatFrete);
+            document.getElementById('dash-qtd-fretes').innerText = `${qtdFretes} frete(s) concluido(s)`;
 
-            document.getElementById('dash-faturamento').innerText = formatarMoeda(faturamento);
-            document.getElementById('dash-qtd-fretes').innerText = `${qtdConcluidos} concluídos no mês`;
-            document.getElementById('dash-pendente').innerText = formatarMoeda(pendente);
-            document.getElementById('dash-qtd-pendentes').innerText = `${qtdPendentes} serviços pendentes`;
-            document.getElementById('dash-despesas').innerText = formatarMoeda(despesas);
-            document.getElementById('dash-lucro-real').innerText = formatarMoeda(lucroReal);
+            document.getElementById('dash-faturamento-guincho').innerText = formatarMoeda(fatGuincho);
+            document.getElementById('dash-qtd-guinchos').innerText = `${qtdGuinchos} guincho(s) concluido(s)`;
+
+            document.getElementById('dash-faturamento').innerText = formatarMoeda(fatBrutoTotal);
+            document.getElementById('dash-qtd-total').innerText = `${qtdFretes + qtdGuinchos} servico(s) concluido(s)`;
+
+            document.getElementById('dash-pendente').innerText = formatarMoeda(totalPendente);
+            document.getElementById('dash-qtd-pendentes').innerText = `${qtdPendentes} aguardando/pendentes`;
+
+            document.getElementById('dash-despesas').innerText = formatarMoeda(totalDespesas);
+            document.getElementById('dash-lucro-real').innerText = formatarMoeda(lucroLiquidoTotal);
             document.getElementById('dash-Margem').innerText = `Margem: ${margem}%`;
-            document.getElementById('dash-status-resumo').innerText = `${pCount} P | ${aCount} A | ${cCount} C`;
 
+            // Custos detalhados
             document.getElementById('custo-gasolina').innerText = formatarMoeda(cGasolina);
             document.getElementById('custo-ajudante').innerText = formatarMoeda(cAjudante);
             document.getElementById('custo-pedagio').innerText = formatarMoeda(cPedagio);
             document.getElementById('custo-manutencao').innerText = formatarMoeda(cManutencao);
+
+            // Renderizar Lista lateral
+            const containerLista = document.getElementById('lista-ultimos-fretes');
+            if (ultimosLista.length === 0) {
+                containerLista.innerHTML = `<li class="text-center py-6 text-gray-400 text-xs">Nenhum servico concluido neste mes.</li>`;
+            } else {
+                ultimosLista.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+                containerLista.innerHTML = ultimosLista.map(item => `
+                    <li class="py-2.5 flex justify-between items-center hover:bg-gray-50 px-1 rounded">
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                ${badgeTipo(item.tipoServico)}
+                                <span class="font-bold text-gray-800 text-xs">${item.nome}</span>
+                            </div>
+                            <span class="text-[11px] text-gray-400 block mt-0.5">${formatarDataEHora(item.data, item.hora)}</span>
+                        </div>
+                        <span class="font-bold text-xs text-green-600">${formatarMoeda(item.valor)}</span>
+                    </li>
+                `).join('');
+            }
         }
 
-        /* --- EXIBE TODOS OS PENDENTES (Ordenados do mais próximo para o mais distante) --- */
+        function renderizarGrafico() {
+            const ctx = document.getElementById('graficoGanhos').getContext('2d');
+            
+            // Agrupar ultimos 6 meses
+            const mesesChave = {};
+            const hoje = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                mesesChave[chave] = { frete: 0, guincho: 0, despesa: 0, lucro: 0 };
+            }
+
+            cacheFretes.forEach(f => {
+                const st = (f.status === 'Concluido' || f.status === 'Concluído') ? 'Concluido' : f.status;
+                if (st === 'Concluido' && f.data) {
+                    const ch = f.data.substring(0, 7);
+                    if (mesesChave[ch]) {
+                        const val = f.valor || 0;
+                        const desp = (f.custo_gasolina || 0) + (f.custo_ajudante || 0) + (f.custo_pedagio || 0) + (f.custo_manutencao || 0);
+                        if (f.tipoServico === 'Guincho') {
+                            mesesChave[ch].guincho += val;
+                        } else {
+                            mesesChave[ch].frete += val;
+                        }
+                        mesesChave[ch].despesa += desp;
+                    }
+                }
+            });
+
+            const labels = [];
+            const dataFrete = [];
+            const dataGuincho = [];
+            const dataLucro = [];
+
+            Object.keys(mesesChave).sort().forEach(ch => {
+                const [ano, mes] = ch.split('-');
+                const nomeMes = new Date(ano, parseInt(mes) - 1, 1).toLocaleString('pt-BR', { month: 'short' });
+                labels.push(`${nomeMes}/${ano.substring(2)}`);
+                
+                const item = mesesChave[ch];
+                const fatTotal = item.frete + item.guincho;
+                dataFrete.push(item.frete);
+                dataGuincho.push(item.guincho);
+                dataLucro.push(fatTotal - item.despesa);
+            });
+
+            if (meuGrafico) meuGrafico.destroy();
+
+            meuGrafico = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Frete (R$)',
+                            data: dataFrete,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Guincho (R$)',
+                            data: dataGuincho,
+                            backgroundColor: '#a855f7',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Lucro Liquido (R$)',
+                            data: dataLucro,
+                            type: 'line',
+                            borderColor: '#22c55e',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
         function renderizarAbaPendentes() {
             const container = document.getElementById('lista-pendentes');
-            const badge = document.getElementById('badge-contador-pendentes');
-            container.innerHTML = '';
+            const badgeContador = document.getElementById('badge-contador-pendentes');
 
             const pendentes = cacheFretes.filter(f => f.status === 'Pendente');
 
-            // Ordenação do mais próximo (mais antigo em data futura) ao mais distante
-            pendentes.sort((a, b) => {
-                const dataA = (a.data || '') + 'T' + (a.hora || '00:00');
-                const dataB = (b.data || '') + 'T' + (b.hora || '00:00');
-                return dataA.localeCompare(dataB);
-            });
-
             if (pendentes.length > 0) {
-                badge.innerText = pendentes.length;
-                badge.classList.remove('hidden');
+                badgeContador.innerText = pendentes.length;
+                badgeContador.classList.remove('hidden');
             } else {
-                badge.classList.add('hidden');
-                container.innerHTML = '<p class="text-gray-400 text-sm col-span-2 text-center py-8">Nenhum frete ou orçamento pendente no momento.</p>';
+                badgeContador.classList.add('hidden');
+            }
+
+            if (pendentes.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-white p-8 rounded-xl text-center text-gray-400 border">
+                        <i class="fas fa-check-circle text-4xl mb-2 text-green-500"></i>
+                        <p class="font-bold text-gray-600">Nenhum orcamento ou servico pendente!</p>
+                    </div>
+                `;
                 return;
             }
 
-            pendentes.forEach(p => {
-                const ehSite = p.origemSolicitacao === 'Site';
-                container.innerHTML += `
-                    <div class="bg-white p-4 rounded-lg shadow-sm border ${ehSite ? 'border-amber-300 bg-amber-50/20' : 'border-gray-200'} flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <h3 class="font-bold text-gray-800 text-base">${p.nome}</h3>
-                                    <p class="text-xs text-gray-500"><i class="fas fa-phone mr-1"></i>${p.telefone}</p>
-                                </div>
-                                <span class="text-xs ${ehSite ? 'bg-amber-100 text-amber-800' : 'bg-yellow-100 text-yellow-800'} px-2.5 py-1 rounded-full font-bold">
-                                    ${ehSite ? 'Pedido do Site' : 'Agendado'}
-                                </span>
-                            </div>
-                            <div class="text-xs space-y-1 mb-3 text-gray-600 bg-gray-50 p-2.5 rounded border">
-                                <p><strong>Agendado para:</strong> <span class="text-blue-700 font-bold">${formatarDataEHora(p.data, p.hora)}</span></p>
-                                <p><strong>De:</strong> ${p.saida}</p>
-                                <p><strong>Para:</strong> ${p.entrega}</p>
-                                ${p.observacao ? `<p class="mt-1 italic text-gray-500">Obs: ${p.observacao}</p>` : ''}
-                            </div>
+            pendentes.sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+
+            container.innerHTML = pendentes.map(item => `
+                <div class="bg-white rounded-xl shadow-sm border p-5 hover:border-amber-400 transition">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            ${badgeTipo(item.tipoServico)}
+                            <span class="px-2 py-0.5 text-xs font-bold rounded ${badgeStatus(item.status)}">${item.status}</span>
                         </div>
-                        <div class="flex items-center justify-between border-t pt-3 mt-2">
-                            <div>
-                                <span class="text-xs text-gray-400 block">Valor previsto</span>
-                                <span class="font-bold text-base text-amber-600">${formatarMoeda(p.valor)}</span>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="abrirModalTratar('${p.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-bold transition flex items-center shadow-sm">
-                                    <i class="fas fa-calculator mr-1"></i>Tratar / Editar
-                                </button>
-                                <button onclick="excluirFrete('${p.id}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded text-xs font-bold transition">
-                                    <i class="fas fa-trash-alt mr-1"></i>Cancelar
-                                </button>
-                            </div>
+                        <span class="text-xs text-gray-400"><i class="fas fa-calendar mr-1"></i>${formatarDataEHora(item.data, item.hora)}</span>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">${item.nome}</h3>
+                    <p class="text-xs text-blue-600 font-semibold mb-3"><i class="fab fa-whatsapp mr-1"></i>${item.telefone}</p>
+
+                    ${item.tipoServico === 'Guincho' ? `
+                        <div class="bg-purple-50 p-2.5 rounded-lg text-xs mb-3 border border-purple-100">
+                            <p class="text-purple-900 font-bold"><i class="fas fa-car mr-1"></i>Veiculo: ${item.veiculo_modelo || 'Nao informado'} ${item.veiculo_placa ? `(${item.veiculo_placa})` : ''}</p>
+                        </div>
+                    ` : `
+                        <div class="bg-blue-50 p-2.5 rounded-lg text-xs mb-3 border border-blue-100">
+                            <p class="text-blue-900 font-bold"><i class="fas fa-home mr-1"></i>Local: ${item.tipoLocal || 'N/I'} | Ajudante: ${item.ajudante || 'N/I'}</p>
+                        </div>
+                    `}
+
+                    <div class="text-xs space-y-1 text-gray-600 mb-4 bg-gray-50 p-2.5 rounded-lg">
+                        <p><strong>De:</strong> ${item.saida}</p>
+                        <p><strong>Para:</strong> ${item.entrega}</p>
+                        ${item.distancia_km ? `<p class="text-blue-700 font-semibold"><strong>Distancia:</strong> ${item.distancia_km} KM</p>` : ''}
+                        ${item.observacao ? `<p class="italic text-gray-500 mt-1">"${item.observacao}"</p>` : ''}
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2 border-t">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block uppercase font-bold">Valor Previsto</span>
+                            <span class="text-lg font-extrabold text-green-700">${formatarMoeda(item.valor)}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="deletarServico('${item.id}')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-lg text-xs transition">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button onclick="abrirModalTratar('${item.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs transition shadow-sm flex items-center gap-1">
+                                <i class="fas fa-calculator"></i> Tratar / Editar
+                            </button>
                         </div>
                     </div>
-                `;
-            });
+                </div>
+            `).join('');
         }
 
-        /* --- GUIA DE PESQUISA (DO ÚLTIMO REALIZADO PARA O PRIMEIRO) --- */
         function filtrarEBuscar() {
-            const termo = document.getElementById('busca').value.toLowerCase();
-            const statusFiltro = document.getElementById('filtro-status').value;
+            const busca = document.getElementById('busca').value.toLowerCase();
+            const filtroTipo = document.getElementById('filtro-tipo').value;
+            const filtroStatus = document.getElementById('filtro-status').value;
             const container = document.getElementById('resultados-pesquisa');
-            container.innerHTML = '';
 
-            // 1. Filtra removendo os pendentes e aplicando as buscas do usuário
-            const filtrados = cacheFretes.filter(f => {
-                if (f.status === 'Pendente') return false;
-
-                const bateStatus = (statusFiltro === 'Todos') || (f.status === statusFiltro);
-                const bateTexto = (f.nome || '').toLowerCase().includes(termo) ||
-                                  (f.saida || '').toLowerCase().includes(termo) ||
-                                  (f.entrega || '').toLowerCase().includes(termo) ||
-                                  (f.observacao || '').toLowerCase().includes(termo);
-                return bateStatus && bateTexto;
+            let filtrados = cacheFretes.filter(f => {
+                const st = (f.status === 'Concluido' || f.status === 'Concluído') ? 'Concluido' : f.status;
+                // Apenas Confirmados (Em Andamento e Concluídos) na guia de Pesquisa
+                return st !== 'Pendente';
             });
 
-            // 2. ORDENAÇÃO DECRESCENTE (do último realizado para o primeiro)
-            filtrados.sort((a, b) => {
-                const dataA = (a.data || '') + 'T' + (a.hora || '00:00');
-                const dataB = (b.data || '') + 'T' + (b.hora || '00:00');
-                return dataB.localeCompare(dataA);
-            });
+            if (filtroTipo !== 'Todos') {
+                filtrados = filtrados.filter(f => f.tipoServico === filtroTipo);
+            }
 
-            if(filtrados.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 text-sm col-span-2 text-center py-8">Nenhum serviço confirmado encontrado.</p>';
+            if (filtroStatus !== 'Todos') {
+                filtrados = filtrados.filter(f => {
+                    const st = (f.status === 'Concluido' || f.status === 'Concluído') ? 'Concluido' : f.status;
+                    return st === filtroStatus;
+                });
+            }
+
+            if (busca.trim() !== "") {
+                filtrados = filtrados.filter(f => {
+                    return (f.nome && f.nome.toLowerCase().includes(busca)) ||
+                           (f.telefone && f.telefone.toLowerCase().includes(busca)) ||
+                           (f.saida && f.saida.toLowerCase().includes(busca)) ||
+                           (f.entrega && f.entrega.toLowerCase().includes(busca)) ||
+                           (f.veiculo_modelo && f.veiculo_modelo.toLowerCase().includes(busca)) ||
+                           (f.observacao && f.observacao.toLowerCase().includes(busca));
+                });
+            }
+
+            if (filtrados.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-white p-8 rounded-xl text-center text-gray-400 border">
+                        <i class="fas fa-search text-3xl mb-2 text-gray-300"></i>
+                        <p class="font-bold text-gray-600">Nenhum servico encontrado nos filtros atuais.</p>
+                    </div>
+                `;
                 return;
             }
 
-            filtrados.forEach(f => {
-                container.innerHTML += `
-                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <h3 class="font-bold text-gray-800 text-lg">${f.nome}</h3>
-                                    <p class="text-xs text-gray-500"><i class="fas fa-phone mr-1"></i>${f.telefone}</p>
-                                </div>
-                                <span class="text-xs px-2.5 py-1 rounded-full font-bold ${badgeStatus(f.status)}">${f.status}</span>
-                            </div>
-                            <div class="text-xs space-y-1 mb-3 text-gray-600 bg-gray-50 p-2.5 rounded">
-                                <p><strong>Data/Hora do Serviço:</strong> <span class="text-blue-700 font-bold">${formatarDataEHora(f.data, f.hora)}</span></p>
-                                <p><strong>Origem:</strong> ${f.saida}</p>
-                                <p><strong>Destino:</strong> ${f.entrega}</p>
-                                ${f.observacao ? `<p class="mt-1 italic text-gray-500">Obs: ${f.observacao}</p>` : ''}
-                            </div>
+            // Ordenar do mais recente para o mais antigo
+            filtrados.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+
+            container.innerHTML = filtrados.map(item => `
+                <div class="bg-white rounded-xl shadow-sm border p-5 hover:border-blue-400 transition">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            ${badgeTipo(item.tipoServico)}
+                            <span class="px-2 py-0.5 text-xs font-bold rounded ${badgeStatus(item.status)}">${item.status}</span>
                         </div>
-                        <div class="flex items-center justify-between border-t pt-3 mt-2">
-                            <div>
-                                <span class="text-xs text-gray-400 block">Valor</span>
-                                <span class="font-bold text-lg text-green-600">${formatarMoeda(f.valor)}</span>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="abrirModalTratar('${f.id}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-xs font-bold transition">
-                                    <i class="fas fa-edit mr-1"></i>Editar
-                                </button>
-                                <button onclick="excluirFrete('${f.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded text-xs font-bold transition border border-red-200">
-                                    <i class="fas fa-trash-alt mr-1"></i>Excluir
-                                </button>
-                            </div>
+                        <span class="text-xs text-gray-400"><i class="fas fa-calendar mr-1"></i>${formatarDataEHora(item.data, item.hora)}</span>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">${item.nome}</h3>
+                    <p class="text-xs text-blue-600 font-semibold mb-3"><i class="fab fa-whatsapp mr-1"></i>${item.telefone}</p>
+
+                    ${item.tipoServico === 'Guincho' ? `
+                        <div class="bg-purple-50 p-2.5 rounded-lg text-xs mb-3 border border-purple-100">
+                            <p class="text-purple-900 font-bold"><i class="fas fa-car mr-1"></i>Veiculo: ${item.veiculo_modelo || 'N/I'} ${item.veiculo_placa ? `(${item.veiculo_placa})` : ''}</p>
+                        </div>
+                    ` : `
+                        <div class="bg-blue-50 p-2.5 rounded-lg text-xs mb-3 border border-blue-100">
+                            <p class="text-blue-900 font-bold"><i class="fas fa-home mr-1"></i>Local: ${item.tipoLocal || 'N/I'} | Ajudante: ${item.ajudante || 'N/I'}</p>
+                        </div>
+                    `}
+
+                    <div class="text-xs space-y-1 text-gray-600 mb-4 bg-gray-50 p-2.5 rounded-lg">
+                        <p><strong>De:</strong> ${item.saida}</p>
+                        <p><strong>Para:</strong> ${item.entrega}</p>
+                        ${item.distancia_km ? `<p class="text-blue-700 font-semibold"><strong>Distancia:</strong> ${item.distancia_km} KM</p>` : ''}
+                        ${item.observacao ? `<p class="italic text-gray-500 mt-1">"${item.observacao}"</p>` : ''}
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2 border-t">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block uppercase font-bold">Valor Cobrado</span>
+                            <span class="text-lg font-extrabold text-green-700">${formatarMoeda(item.valor)}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="deletarServico('${item.id}')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-lg text-xs transition">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button onclick="abrirModalTratar('${item.id}')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition shadow-sm flex items-center gap-1">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
                         </div>
                     </div>
-                `;
-            });
+                </div>
+            `).join('');
         }
 
         function abrirModalTratar(id) {
-            const frete = cacheFretes.find(f => f.id === id);
-            if (!frete) return;
+            const item = cacheFretes.find(f => f.id === id);
+            if (!item) return;
 
-            document.getElementById('modal-id').value = frete.id;
-            document.getElementById('modal-info-nome').innerText = frete.nome || 'Não informado';
-            document.getElementById('modal-info-local').innerText = frete.tipoLocal || 'Não informado';
-            document.getElementById('modal-info-ajudante').innerText = frete.ajudante || 'Não informado';
-            document.getElementById('modal-info-saida').innerText = frete.saida || '-';
-            document.getElementById('modal-info-entrega').innerText = frete.entrega || '-';
-            document.getElementById('modal-info-obs').innerText = frete.observacao || 'Nenhum detalhe informado.';
+            document.getElementById('modal-id').value = item.id;
+            document.getElementById('modal-info-id').innerText = item.id.substring(0, 6);
+            document.getElementById('modal-tipoServico').value = item.tipoServico || 'Frete';
 
-            document.getElementById('modal-data').value = frete.data || '';
-            document.getElementById('modal-hora').value = frete.hora || '';
-            document.getElementById('modal-valor').value = frete.valor || '';
-            document.getElementById('modal-c-gasolina').value = frete.custo_gasolina || 0;
-            document.getElementById('modal-c-ajudante').value = frete.custo_ajudante || 0;
-            document.getElementById('modal-c-pedagio').value = frete.custo_pedagio || 0;
-            document.getElementById('modal-c-manutencao').value = frete.custo_manutencao || 0;
-            document.getElementById('modal-obs-manutencao').value = frete.obs_manutencao || '';
-            document.getElementById('modal-status').value = frete.status || 'Pendente';
+            document.getElementById('modal-badge-tipo').innerText = item.tipoServico || 'Frete';
+            document.getElementById('modal-badge-tipo').className = item.tipoServico === 'Guincho' ? 
+                "px-2.5 py-0.5 text-xs font-bold rounded-full bg-purple-600 text-white" : 
+                "px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-600 text-white";
+
+            document.getElementById('modal-info-nome').innerText = item.nome;
+            
+            const divEspecifique = document.getElementById('modal-linha-especifica');
+            if (item.tipoServico === 'Guincho') {
+                divEspecifique.innerHTML = `<strong>Veiculo:</strong> ${item.veiculo_modelo || 'N/I'} ${item.veiculo_placa ? `(${item.veiculo_placa})` : ''}`;
+            } else {
+                divEspecifique.innerHTML = `<strong>Local:</strong> ${item.tipoLocal || 'N/I'} | <strong>Ajudante:</strong> ${item.ajudante || 'N/I'}`;
+            }
+
+            document.getElementById('modal-info-saida').innerText = item.saida;
+            document.getElementById('modal-info-entrega').innerText = item.entrega;
+            document.getElementById('modal-info-obs').innerText = item.observacao || "Nenhuma observacao";
+
+            document.getElementById('modal-data').value = item.data || new Date().toISOString().split('T')[0];
+            document.getElementById('modal-hora').value = item.hora || "";
+            document.getElementById('modal-valor').value = item.valor || 0;
+
+            document.getElementById('modal-c-gasolina').value = item.custo_gasolina || 0;
+            document.getElementById('modal-c-ajudante').value = item.custo_ajudante || 0;
+            document.getElementById('modal-c-pedagio').value = item.custo_pedagio || 0;
+            document.getElementById('modal-c-manutencao').value = item.custo_manutencao || 0;
+            document.getElementById('modal-obs-manutencao').value = item.obs_manutencao || "";
+
+            const stNorm = (item.status === 'Concluido' || item.status === 'Concluído') ? 'Concluido' : item.status;
+            document.getElementById('modal-status').value = stNorm;
 
             document.getElementById('modal-tratar').classList.remove('hidden');
         }
@@ -783,6 +1122,7 @@
         function atualizarOrcamentoTratado(event) {
             event.preventDefault();
             const id = document.getElementById('modal-id').value;
+            if(!id) return;
 
             const dadosAtualizados = {
                 data: document.getElementById('modal-data').value,
@@ -797,73 +1137,38 @@
             };
 
             db.collection("fretes").doc(id).update(dadosAtualizados).then(() => {
-                alert("Frete atualizado com sucesso!");
                 fecharModalTratar();
             }).catch(err => {
                 console.error("Erro ao atualizar: ", err);
-                alert("Erro ao salvar alterações no banco.");
+                alert("Erro ao atualizar dados na nuvem.");
             });
         }
 
-        function renderizarGrafico() {
-            const ctx = document.getElementById('graficoGanhos');
-            if(!ctx) return;
+        function deletarServico(id) {
+            const modalConfirm = document.createElement('div');
+            modalConfirm.className = "fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4";
+            modalConfirm.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl max-w-sm w-full text-center shadow-xl">
+                    <i class="fas fa-exclamation-triangle text-amber-500 text-4xl mb-3"></i>
+                    <h3 class="font-bold text-gray-800 text-lg mb-2">Excluir Lancamento?</h3>
+                    <p class="text-xs text-gray-500 mb-5">Tem certeza que deseja apagar este servico? Esta acao nao pode ser desfeita.</p>
+                    <div class="flex gap-2 justify-center">
+                        <button id="btn-cancel-del" class="px-4 py-2 bg-gray-100 font-bold text-xs rounded-lg text-gray-700">Cancelar</button>
+                        <button id="btn-confirm-del" class="px-4 py-2 bg-red-600 font-bold text-xs rounded-lg text-white">Sim, Excluir</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalConfirm);
 
-            const mesesMap = {};
-            const hoje = new Date();
-            
-            for (let i = 5; i >= 0; i--) {
-                const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-                const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                const label = d.toLocaleString('pt-BR', { month: 'short' }).toUpperCase();
-                mesesMap[chave] = { label: label, faturamento: 0, lucro: 0 };
-            }
-
-            cacheFretes.forEach(f => {
-                if (f.status === 'Concluído' && f.data) {
-                    const chave = f.data.substring(0, 7);
-                    if (mesesMap[chave]) {
-                        const receita = f.valor || 0;
-                        const custo = (f.custo_gasolina || 0) + (f.custo_ajudante || 0) + (f.custo_pedagio || 0) + (f.custo_manutencao || 0);
-                        mesesMap[chave].faturamento += receita;
-                        mesesMap[chave].lucro += (receita - custo);
-                    }
-                }
-            });
-
-            const labels = Object.values(mesesMap).map(m => m.label);
-            const dadosFaturamento = Object.values(mesesMap).map(m => m.faturamento);
-            const dadosLucro = Object.values(mesesMap).map(m => m.lucro);
-
-            if (meuGrafico) {
-                meuGrafico.destroy();
-            }
-
-            meuGrafico = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Faturamento Bruto',
-                            data: dadosFaturamento,
-                            backgroundColor: '#3B82F6'
-                        },
-                        {
-                            label: 'Lucro Líquido',
-                            data: dadosLucro,
-                            backgroundColor: '#10B981'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
+            document.getElementById('btn-cancel-del').onclick = () => document.body.removeChild(modalConfirm);
+            document.getElementById('btn-confirm-del').onclick = () => {
+                db.collection("fretes").doc(id).delete().then(() => {
+                    document.body.removeChild(modalConfirm);
+                }).catch(err => {
+                    alert("Erro ao excluir.");
+                    document.body.removeChild(modalConfirm);
+                });
+            };
         }
     </script>
 </body>
